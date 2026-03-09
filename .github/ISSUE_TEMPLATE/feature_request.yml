@@ -1,0 +1,43 @@
+name: Feature request
+description: Propose a documented, portable improvement to the repository or runtime baseline
+title: "[feature] "
+labels:
+  - enhancement
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem statement
+      description: What problem are you trying to solve?
+    validations:
+      required: true
+  - type: dropdown
+    id: module
+    attributes:
+      label: Affected module
+      options:
+        - docs
+        - codex
+        - scripts
+        - skills
+        - bootstrap
+        - verification
+        - governance
+        - other
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed change
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+  - type: textarea
+    id: portability
+    attributes:
+      label: Portability or safety impact
+      description: Explain any effect on reproducibility, security, or cross-machine transfer
