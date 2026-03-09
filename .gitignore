@@ -6,3 +6,6 @@
 
 # Local Serena runtime state
 .serena/
+
+# Local release bundle output
+dist/

@@ -139,6 +139,10 @@ for profile in "${skill_profiles[@]}"; do
 done
 
 if [[ -f "$QUICK_VALIDATE" ]] && command -v python3 >/dev/null 2>&1; then
+  if ! python3 -c 'import yaml' >/dev/null 2>&1; then
+    warn "python3 is available but PyYAML is missing; skipping OpenAI skill-creator validation"
+    warnings=$((warnings + 1))
+  else
   for profile in "${skill_profiles[@]}"; do
     profile_dir="$SKILLS_DIR/$profile"
     if ! python3 "$QUICK_VALIDATE" "$profile_dir" >/dev/null 2>&1; then
@@ -146,6 +150,7 @@ if [[ -f "$QUICK_VALIDATE" ]] && command -v python3 >/dev/null 2>&1; then
       warnings=$((warnings + 1))
     fi
   done
+  fi
 else
   warn "quick_validate.py not available at $QUICK_VALIDATE; skipping OpenAI skill-creator validation"
   warnings=$((warnings + 1))
