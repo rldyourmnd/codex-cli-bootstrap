@@ -153,8 +153,7 @@ if [[ -f "$QUICK_VALIDATE" ]] && command -v python3 >/dev/null 2>&1; then
   done
   fi
 else
-  warn "quick_validate.py not available at $QUICK_VALIDATE; skipping OpenAI skill-creator validation"
-  warnings=$((warnings + 1))
+  say "quick_validate.py not available at $QUICK_VALIDATE; skipping optional OpenAI skill-creator validation"
 fi
 
 forbidden_hits="$(rg -n "codex exec|gemini-cli|\bgemini\b" "$SKILLS_DIR" "$DOCS_DIR" -i || true)"
