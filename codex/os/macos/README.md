@@ -1,5 +1,4 @@
 # macOS Payload
 
-`runtime/` is the source of truth for install, export, verify, and release-bundle flows on macOS.
-
-Read [`runtime/README.md`](runtime/README.md) for the module-level map of the populated payload.
+`runtime/` is the native macOS profile slot.
+If a native macOS export is not present yet, bootstrap and verification fall back to the current primary exported payload while keeping this path stable for future parity work.

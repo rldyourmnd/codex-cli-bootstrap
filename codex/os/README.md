@@ -8,12 +8,18 @@
 
 ## Runtime payloads
 
-- `macos/README.md`
-- `macos/runtime/README.md`
 - `linux/README.md`
 - `linux/runtime/README.md`
+- `macos/README.md`
+- `macos/runtime/README.md`
 - `windows/README.md`
 - `windows/runtime/README.md`
 
-`macos/runtime/` is the canonical populated payload.
-`linux/runtime/` and `windows/runtime/` remain explicit, documented placeholders so future parity work does not change the top-level hierarchy.
+## Support model
+
+- `linux/runtime/` is the current primary exported payload
+- `macos/runtime/` is the native macOS profile slot
+- `windows/runtime/` is the native Windows profile slot
+
+Bootstrap and install scripts first try the runtime that matches the current OS.
+If that native runtime payload is not present yet, they fall back to the primary exported payload while preserving the same top-level OS hierarchy.

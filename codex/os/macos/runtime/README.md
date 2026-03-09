@@ -1,20 +1,18 @@
-# macOS Runtime Payload
+# macOS Runtime Profile Slot
 
-This directory is the canonical populated runtime payload for `codex-cli-bootstrap`.
+This directory is reserved for a future native macOS export.
 
-## Modules
+## Expected Modules
 
-- `agents/`: exported global runtime policy snapshot
-- `config/`: sanitized config templates and trust snapshot
-- `meta/`: pinned toolchain metadata
-- `rules/`: exact source snapshot plus rendered portable rules
-- `skills/custom/`: direct custom skill payload
-- `skills/manifests/`: canonical skill manifests that drive verification and rules rendering
+- `agents/`
+- `config/`
+- `meta/`
+- `rules/`
+- `skills/custom/`
+- `skills/manifests/`
 
-## Truth Boundaries
+## Current Behavior
 
-- `config/config.template.toml` defines the portable config baseline.
-- `rules/default.rules.source.snapshot` preserves the exported source-machine rules.
-- `rules/default.rules` and `rules/default.rules.template` are derived outputs, not hand-maintained policy files.
-- `meta/toolchain.lock` is the runtime version contract used by verification scripts.
-- `skills/custom/` and `skills/manifests/custom-skills.manifest.txt` must stay in sync.
+- macOS machines use the native macOS installer scripts under `scripts/os/macos/install/`
+- if no native macOS payload is checked in here yet, restore and verification scripts fall back to the current primary exported payload under `codex/os/linux/runtime/`
+- once a native macOS export is added, it must keep the same module boundaries as the Linux runtime payload

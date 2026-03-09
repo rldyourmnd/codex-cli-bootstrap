@@ -1,8 +1,8 @@
-# Windows Runtime Placeholder
+# Windows Runtime Profile Slot
 
-This directory is intentionally kept as a documented placeholder.
+This directory is reserved for a future native Windows export.
 
-When Windows parity is added, this directory should mirror the same module boundaries used by `codex/os/macos/runtime/`:
+## Expected Modules
 
 - `agents/`
 - `config/`
@@ -11,4 +11,8 @@ When Windows parity is added, this directory should mirror the same module bound
 - `skills/custom/`
 - `skills/manifests/`
 
-Until then, do not place ad-hoc files here that would break the stable OS hierarchy.
+## Current Behavior
+
+- Windows machines use the native PowerShell installer scripts under `scripts/os/windows/install/`
+- if no native Windows payload is checked in here yet, restore and verification scripts fall back to the current primary exported payload under `codex/os/linux/runtime/`
+- once a native Windows export is added, it must keep the same module boundaries as the Linux runtime payload
