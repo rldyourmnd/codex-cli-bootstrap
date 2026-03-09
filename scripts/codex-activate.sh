@@ -34,7 +34,6 @@ REQUIRED_MCPS=(
 
 REQUIRED_SKILLS=(
   "frontend-design"
-  "code-reviewer"
   "webapp-testing"
   "pptx"
   "hook-development"
@@ -46,9 +45,10 @@ REQUIRED_SKILLS=(
   "search-strategy"
   "cloudflare-deploy"
   "gh-address-comments"
+  "gh-fix-ci"
+  "openai-docs"
   "pdf"
   "security-best-practices"
-  "security-ownership-map"
   "security-threat-model"
   "spreadsheet"
   "yeet"

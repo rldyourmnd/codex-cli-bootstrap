@@ -351,8 +351,8 @@ if $CLEAN_SKILLS; then
   say "Cleaned existing non-system skills"
 fi
 
+baseline_skills=()
 if [[ -d "$AGENT_SKILLS_SRC" ]]; then
-  baseline_skills=()
   while IFS= read -r line; do
     baseline_skills+=("$line")
   done < <(list_top_level_dirs "$AGENT_SKILLS_SRC")
@@ -413,6 +413,13 @@ elif [[ -d "$CUSTOM_SKILLS_SRC" ]]; then
   say "Custom skills synced to $TARGET_SKILLS_DIR"
 else
   warn "No custom skills source found in repository"
+fi
+
+if [[ ${#baseline_skills[@]} -gt 0 ]] && ([[ -f "$CUSTOM_SKILLS_ARCHIVE_B64" ]] || [[ -d "$CUSTOM_SKILLS_SRC" ]]); then
+  for skill in "${baseline_skills[@]}"; do
+    run rsync -a "$AGENT_SKILLS_SRC/$skill/" "$TARGET_SKILLS_DIR/$skill/"
+  done
+  say "Re-applied repository agent baseline skills after custom skill sync (${#baseline_skills[@]})"
 fi
 
 if [[ -f "$CUSTOM_SKILLS_MANIFEST" ]]; then
