@@ -18,7 +18,7 @@ The format is based on Keep a Changelog principles and uses a simplified date-ba
 - Repository structure aligned around direct files instead of packed runtime archives
 - macOS config template hardened around `approval_policy = "never"` and `sandbox_mode = "danger-full-access"`
 
-## 2026-03-10
+## v0.0.2 - 2026-03-10
 
 ### Added
 

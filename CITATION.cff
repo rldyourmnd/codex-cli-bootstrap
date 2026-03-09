@@ -7,5 +7,5 @@ authors:
     given-names: "Danil"
 repository-code: "https://github.com/rldyourmnd/codex-cli-bootstrap"
 license: "MIT"
-version: "v0.0.1"
-date-released: "2026-02-26"
+version: "v0.0.2"
+date-released: "2026-03-10"
