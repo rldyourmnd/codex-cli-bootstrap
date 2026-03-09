@@ -29,6 +29,9 @@ The format is based on Keep a Changelog principles and uses a simplified date-ba
 - `.github/CODEOWNERS` assigning repository review ownership to `@rldyourmnd`
 - `scripts/check-repo-consistency.sh` and `scripts/build-release-bundle.sh`
 - GitHub Release workflow for portable bundles
+- GitHub Discussions routing and README trust badges for public support discoverability
+- Runtime module `README.md` files and reusable `templates/AGENTS.md`
+- Repository-wide `.editorconfig` and `.gitattributes`
 
 ### Changed
 
@@ -38,6 +41,9 @@ The format is based on Keep a Changelog principles and uses a simplified date-ba
 - Curated skill baseline updated to include `openai-docs` and `gh-fix-ci`
 - Direct custom skill payload updated to remove `code-reviewer`, `figma-implement-design`, and `security-ownership-map`
 - Portable rules render path aligned with the curated manifest
+- Linux and Windows setup docs normalized to stable canonical filenames
+- Machine-readable discovery files refreshed to match the active runtime and support model
+- CI expanded to include repository-owned agent audit before release bundle validation
 
 ### Removed
 

@@ -6,16 +6,23 @@ on:
       - "v*"
   workflow_dispatch:
 
+defaults:
+  run:
+    shell: bash
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   release:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write
     steps:
       - name: Check out repository
         uses: actions/checkout@v5
@@ -23,10 +30,13 @@ jobs:
       - name: Install runner dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y rsync ripgrep
+          sudo apt-get install -y python3-yaml rsync ripgrep
 
       - name: Run repository consistency checks
         run: bash ./scripts/check-repo-consistency.sh
+
+      - name: Run shared-agent audit
+        run: bash ./scripts/audit-codex-agents.sh
 
       - name: Determine release version
         id: meta

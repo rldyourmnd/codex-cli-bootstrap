@@ -36,6 +36,8 @@ This directory contains the automation entrypoints for exporting, restoring, val
 4. Validate with `check-repo-consistency.sh`, `check-toolchain.sh`, `verify.sh`, `audit-codex-agents.sh`, and `codex-activate.sh --check-only`.
 5. Build distributable release artifacts with `build-release-bundle.sh` when preparing tagged releases.
 
+GitHub Actions reuses the same repository entrypoints for repository consistency, agent audit, and release-bundle validation so CI stays aligned with the documented operator flow.
+
 ## Scope Boundary
 
 These scripts are the operational surface of the repository.
