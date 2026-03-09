@@ -1,7 +1,12 @@
 # Linux Setup
 
 Use this guide when restoring the portable Codex baseline onto Ubuntu or another compatible Linux environment.
-Read [`../README.md`](../README.md) and [`../PORTABLE_SETUP.md`](../PORTABLE_SETUP.md) first if you need the broader flow.
+Read [`../PROFILE_MATRIX.md`](../PROFILE_MATRIX.md) and [`../PORTABLE_SETUP.md`](../PORTABLE_SETUP.md) first if you need the broader flow.
+
+## Current Role
+
+Linux is the current primary exported runtime payload.
+If you refresh the repository from the source machine today, the export lands in `codex/os/linux/runtime/*`.
 
 ## 1. Install Codex
 

@@ -5,17 +5,18 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Discussions](https://img.shields.io/github/discussions/rldyourmnd/codex-cli-bootstrap)](https://github.com/rldyourmnd/codex-cli-bootstrap/discussions)
 
-Portable Codex runtime baseline and public environment mirror for NDDev OpenNetwork.
+Portable Codex CLI bootstrap and public runtime mirror for NDDev OpenNetwork.
 
-`codex-cli-bootstrap` is the public source of truth for the reusable Codex setup maintained by Danil Silantyev (`rldyourmnd`), Global CEO of NDDev (`nddev.it.com`), with development executed through NDDev OpenNetwork (`on.nddev.it.com`).
-It packages a reproducible Codex runtime baseline, shared Codex agent profiles, sanitized configuration snapshots, and operator documentation so the same working environment can be restored across machines in a controlled way.
+`codex-cli-bootstrap` is the public source of truth for the reusable Codex environment maintained by Danil Silantyev (`rldyourmnd`), Global CEO of NDDev (`nddev.it.com`), with development executed through NDDev OpenNetwork (`on.nddev.it.com`).
+It packages a reproducible Codex baseline, shared Codex agent profiles, sanitized `~/.codex` state, and operator documentation so the same environment can be restored on Ubuntu, macOS, and Windows with a stable repository hierarchy.
 
 ## What This Repository Is
 
 - A public open source Codex bootstrap repository
 - A direct-files mirror of the portable parts of `~/.codex`
-- A curated skill baseline with a strict split between shared agent profiles and custom skills
-- A documented, validated, GitHub-native distribution surface for restore and release workflows
+- A strict split between repository-owned shared agents and exported custom skills
+- A profile-aware restore surface for Linux, macOS, and Windows
+- A GitHub-native distribution surface with CI, release bundles, and community health files
 
 ## Ownership
 
@@ -28,62 +29,92 @@ It packages a reproducible Codex runtime baseline, shared Codex agent profiles, 
 
 - MCP baseline: `context7`, `sequential-thinking`, `github`, `shadcn`, `playwright`, `serena`
 - Shared agent profiles: `9` under `codex/os/common/agents/codex-agents`
-- Custom skills: `23` under `codex/os/macos/runtime/skills/custom`
+- Custom skills: `23` under `codex/os/linux/runtime/skills/custom`
 - Config defaults: `approval_policy = "never"` and `sandbox_mode = "danger-full-access"`
 - Toolchain lock: Codex `0.112.0`, Node `25.8.0`, npm `11.11.0`, Python `3.14.3`, uv `0.10.9`, gh `2.87.3`
 
+## OS Profile Model
+
+Codex stores its portable state under `~/.codex`, including `config.toml`, `AGENTS.md`, and installed skills.
+That makes the repository payload portable across platforms as long as each machine first installs the required CLI layer for its own OS.
+
+This repository models that as three explicit layers:
+
+- `codex/os/common/*`: repository-owned shared baseline used on every OS
+- `codex/os/linux/runtime/*`: current primary exported payload from the source Linux machine
+- `codex/os/macos/runtime/*` and `codex/os/windows/runtime/*`: native profile slots reserved for future native exports
+
+`scripts/bootstrap.sh`, `scripts/install.sh`, and `scripts/verify.sh` resolve the requested OS profile first.
+If a native payload for that OS is not checked in yet, they fall back to the current primary exported payload while keeping the top-level OS hierarchy stable.
+
 ## Repository Layout
 
-- [`docs/README.md`](docs/README.md): canonical in-repo wiki for operators and contributors
-- [`docs/INDEX.md`](docs/INDEX.md): concise documentation index
+- [`docs/README.md`](docs/README.md): canonical in-repo wiki
 - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md): structure and data-flow overview
-- [`codex/os/README.md`](codex/os/README.md): OS payload map
-- [`codex/os/macos/runtime/README.md`](codex/os/macos/runtime/README.md): canonical populated runtime module map
-- [`codex/os/common/agents/README.md`](codex/os/common/agents/README.md): shared agent profile source of truth
-- [`codex/os/macos/README.md`](codex/os/macos/README.md): canonical runtime payload root
-- [`scripts/README.md`](scripts/README.md): automation entrypoints and verification flow
-- [`templates/README.md`](templates/README.md): reusable starter templates derived from this baseline
-- [`.github/`](.github): issue templates, PR template, CODEOWNERS, Dependabot, and GitHub Actions workflows
+- [`docs/setup/PROFILE_MATRIX.md`](docs/setup/PROFILE_MATRIX.md): OS support and payload matrix
+- [`docs/setup/PORTABLE_SETUP.md`](docs/setup/PORTABLE_SETUP.md): restore and export workflow
+- [`codex/README.md`](codex/README.md): exported Codex artifact namespace
+- [`codex/os/README.md`](codex/os/README.md): OS profile layout and support model
+- [`codex/os/linux/runtime/README.md`](codex/os/linux/runtime/README.md): current primary exported runtime payload
+- [`codex/os/common/agents/README.md`](codex/os/common/agents/README.md): shared agent profile baseline
+- [`scripts/README.md`](scripts/README.md): lifecycle entrypoints and validation flow
+- [`scripts/os/README.md`](scripts/os/README.md): OS installer hierarchy
+- [`templates/README.md`](templates/README.md): reusable starter templates
+- [`.github/`](.github): issue templates, PR template, CODEOWNERS, Dependabot, and workflows
 
 ## Direct-Files Model
 
-This repository uses an os-first, direct-files layout. The canonical portable payload currently lives under:
+This repository uses an OS-first, direct-files layout instead of archives.
 
-- `codex/os/macos/runtime/README.md`
-- `codex/os/macos/runtime/config/*`
-- `codex/os/macos/runtime/agents/*`
-- `codex/os/macos/runtime/rules/*`
-- `codex/os/macos/runtime/meta/*`
-- `codex/os/macos/runtime/skills/custom/*`
-- `codex/os/macos/runtime/skills/manifests/*`
+Primary exported payload:
+
+- `codex/os/linux/runtime/README.md`
+- `codex/os/linux/runtime/config/*`
+- `codex/os/linux/runtime/agents/*`
+- `codex/os/linux/runtime/rules/*`
+- `codex/os/linux/runtime/meta/*`
+- `codex/os/linux/runtime/skills/custom/*`
+- `codex/os/linux/runtime/skills/manifests/*`
+
+Shared cross-OS baseline:
+
 - `codex/os/common/agents/codex-agents/*`
 
-Linux and Windows directories are kept as explicit placeholders so the hierarchy stays stable as additional runtime payloads are added.
-Each runtime root has its own `README.md` so contributors can understand the module boundary without opening the entire tree.
+Staged native profile slots:
+
+- `codex/os/macos/runtime/README.md`
+- `codex/os/windows/runtime/README.md`
+
+Each runtime root carries its own `README.md` so users can understand the hierarchy without scanning the entire tree.
 
 ## Quick Start
 
 Canonical setup docs:
 
 - [`docs/setup/PORTABLE_SETUP.md`](docs/setup/PORTABLE_SETUP.md)
-- [`docs/setup/PROD_RUNBOOK.md`](docs/setup/PROD_RUNBOOK.md)
-- [`docs/setup/os/macos.md`](docs/setup/os/macos.md)
+- [`docs/setup/PROFILE_MATRIX.md`](docs/setup/PROFILE_MATRIX.md)
 - [`docs/setup/os/linux.md`](docs/setup/os/linux.md)
+- [`docs/setup/os/macos.md`](docs/setup/os/macos.md)
 - [`docs/setup/os/windows.md`](docs/setup/os/windows.md)
 
-Refresh the repository from a known-good local machine:
-
-```bash
-scripts/export-from-local.sh
-scripts/self-test.sh
-```
-
-Restore the baseline on a target machine:
+Set required environment variables:
 
 ```bash
 export CONTEXT7_API_KEY='ctx7sk-...'
 export GITHUB_MCP_TOKEN="$(gh auth token)"
+```
+
+Restore the baseline on the target machine:
+
+```bash
 scripts/bootstrap.sh --skip-curated
+```
+
+Refresh the repository from a known-good source machine:
+
+```bash
+scripts/export-from-local.sh
+scripts/self-test.sh
 ```
 
 Validate the restored environment:
@@ -124,7 +155,7 @@ Workflow entrypoints:
 ## Support Paths
 
 - Use GitHub Discussions for setup questions, usage guidance, and architecture conversations
-- Use GitHub Issues for reproducible bugs, regressions, and concrete feature requests
+- Use GitHub Issues for reproducible bugs, regressions, and feature requests
 - Use [`SECURITY.md`](SECURITY.md) for vulnerabilities and sensitive reports
 
 ## Machine-Readable Discovery

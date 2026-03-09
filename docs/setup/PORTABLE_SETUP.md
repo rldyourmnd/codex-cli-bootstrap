@@ -1,40 +1,49 @@
 # Portable Codex Setup
 
 This is the canonical source-of-truth document for exporting, restoring, and validating the Codex environment represented by this repository.
-The current implementation uses a direct-files os-first layout, not packed runtime archives.
+The current implementation uses a direct-files OS-first layout, not packed runtime archives.
+
+## Profile Model
+
+The repository carries:
+
+- shared cross-OS baseline in `codex/os/common/*`
+- one primary exported runtime payload in `codex/os/linux/runtime/*`
+- native runtime profile slots in `codex/os/macos/runtime/*` and `codex/os/windows/runtime/*`
+
+Bootstrap and install resolve the current OS profile first.
+If that profile does not yet have a native payload checked in, they fall back to the current primary exported payload.
 
 ## Scope
 
-The canonical portable payload currently includes:
+The current primary portable payload includes:
 
-- `codex/os/macos/runtime/config/config.template.toml`
-- `codex/os/macos/runtime/config/projects.local.example.toml`
-- `codex/os/macos/runtime/config/projects.trust.snapshot.toml`
-- `codex/os/macos/runtime/agents/global.AGENTS.md`
-- `codex/os/macos/runtime/rules/default.rules`
-- `codex/os/macos/runtime/rules/default.rules.source.snapshot`
-- `codex/os/macos/runtime/rules/default.rules.template`
-- `codex/os/macos/runtime/meta/toolchain.lock`
-- `codex/os/macos/runtime/skills/custom/*` (23 custom skills)
-- `codex/os/macos/runtime/skills/manifests/custom-skills.manifest.txt`
-- `codex/os/macos/runtime/skills/manifests/curated-manifest.txt`
+- `codex/os/linux/runtime/config/config.template.toml`
+- `codex/os/linux/runtime/config/projects.local.example.toml`
+- `codex/os/linux/runtime/config/projects.trust.snapshot.toml`
+- `codex/os/linux/runtime/agents/global.AGENTS.md`
+- `codex/os/linux/runtime/rules/default.rules`
+- `codex/os/linux/runtime/rules/default.rules.source.snapshot`
+- `codex/os/linux/runtime/rules/default.rules.template`
+- `codex/os/linux/runtime/meta/toolchain.lock`
+- `codex/os/linux/runtime/skills/custom/*` (23 custom skills)
+- `codex/os/linux/runtime/skills/manifests/custom-skills.manifest.txt`
+- `codex/os/linux/runtime/skills/manifests/curated-manifest.txt`
 - `codex/os/common/agents/codex-agents/*` (9 shared agent profiles)
-
-Linux and Windows currently keep explicit runtime placeholders so the path model remains stable while macOS stays the canonical populated profile.
 
 ## Restore On A Target Machine
 
-Install Codex first:
+Install Codex first with the installer that matches your OS:
 
-```bash
-scripts/os/macos/install/ensure-codex.sh
-```
+- Linux: `scripts/os/linux/install/ensure-codex.sh`
+- macOS: `scripts/os/macos/install/ensure-codex.sh`
+- Windows: `scripts/os/windows/install/ensure-codex.ps1`
 
 Optional Claude Code bootstrap:
 
-```bash
-scripts/os/macos/install/ensure-claude-code.sh
-```
+- Linux: `scripts/os/linux/install/ensure-claude-code.sh`
+- macOS: `scripts/os/macos/install/ensure-claude-code.sh`
+- Windows: `scripts/os/windows/install/ensure-claude-code.ps1`
 
 Set required environment variables:
 
@@ -84,6 +93,9 @@ scripts/codex-activate.sh --check-only
 
 ## Refresh Repository From A Local Machine
 
+`scripts/export-from-local.sh` exports into the runtime profile that matches the actual source OS.
+Cross-profile export is rejected on purpose.
+
 ```bash
 scripts/export-from-local.sh
 scripts/self-test.sh
@@ -93,6 +105,7 @@ scripts/self-test.sh
 
 - Export fails if the source global `AGENTS.md` is empty.
 - Export fails if no non-system skills are found.
+- Export fails if the requested target profile does not match the actual source OS.
 - Shared agent profiles and custom skills must not overlap by name.
 - Secret-like values must remain placeholders in `config.template.toml`.
 
@@ -107,7 +120,8 @@ scripts/self-test.sh
 
 - [`../../README.md`](../../README.md)
 - [`README.md`](README.md)
+- [`PROFILE_MATRIX.md`](PROFILE_MATRIX.md)
 - [`PROD_RUNBOOK.md`](PROD_RUNBOOK.md)
-- [`os/macos.md`](os/macos.md)
 - [`os/linux.md`](os/linux.md)
+- [`os/macos.md`](os/macos.md)
 - [`os/windows.md`](os/windows.md)

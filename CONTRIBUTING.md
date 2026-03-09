@@ -10,7 +10,8 @@ Changes must preserve reproducibility, deterministic structure, safety, and docu
 - Read [`README.md`](README.md), [`docs/README.md`](docs/README.md), and [`GOVERNANCE.md`](GOVERNANCE.md).
 - Understand the current payload split:
   - shared agent profiles live under `codex/os/common/agents/codex-agents`
-  - custom skills live under `codex/os/macos/runtime/skills/custom`
+  - the current primary exported custom skills live under `codex/os/linux/runtime/skills/custom`
+  - native macOS and Windows runtime slots live under `codex/os/macos/runtime` and `codex/os/windows/runtime`
 - Do not commit secrets, private auth state, or runtime logs.
 - Keep changes focused and auditable.
 
@@ -22,7 +23,8 @@ Changes must preserve reproducibility, deterministic structure, safety, and docu
 - Keep the `codex/os/*` hierarchy deterministic and path-consistent.
 - Do not introduce overlap between shared agent profile names and custom skill names.
 - Update documentation whenever behavior, structure, or operator workflow changes.
-- If you change export/install/parity logic, update the relevant docs under `docs/` and module `README` files.
+- If you change export, install, or profile resolution logic, update the relevant docs under `docs/` and module `README` files.
+- If you add a native OS payload, keep the same module boundaries used by `codex/os/linux/runtime/`.
 - If you change canonical entrypoints, module boundaries, or discovery surfaces, update `llms.txt`, `llms-full.txt`, and the relevant module `README` files in the same pull request.
 
 ## Required Checks Before Opening A PR

@@ -3,16 +3,17 @@
 ## Summary
 
 codex-cli-bootstrap is an OS-structured Codex environment mirror focused on portable Codex runtime reproducibility and public open source distribution readiness.
-It provides deterministic install, verification, and export workflows, with strict secret hygiene and strict hierarchy boundaries.
+It provides deterministic install, verification, and export workflows, with strict secret hygiene, strict hierarchy boundaries, and an explicit Linux/macOS/Windows profile model.
 
 ## Current baseline
 
-- Target OS payload: macOS
+- Current primary exported payload: Linux
 - MCP baseline: 6 (`context7`, `sequential-thinking`, `github`, `shadcn`, `playwright`, `serena`)
 - Non-system skills: 32 total
-- Custom skills: 23 (`codex/os/macos/runtime/skills/custom/*`)
+- Custom skills: 23 (`codex/os/linux/runtime/skills/custom/*`)
 - Shared profiles: 9 (`codex/os/common/agents/codex-agents/*`)
 - Overlap policy: forbidden between shared and custom skill groups
+- Native macOS and Windows profile slots are staged for future exports
 
 ## Canonical file map
 
@@ -20,50 +21,54 @@ It provides deterministic install, verification, and export workflows, with stri
 - `/CHANGELOG.md` - release history
 - `/SECURITY.md` - vulnerability reporting policy
 - `/CONTRIBUTING.md` - contribution workflow
+- `/docs/setup/PROFILE_MATRIX.md` - OS support and payload matrix
 - `/docs/setup/PORTABLE_SETUP.md` - portable setup reference
 - `/docs/setup/PROD_RUNBOOK.md` - production restore runbook
-- `/docs/setup/os/macos.md` - macOS setup specifics
 - `/docs/setup/os/linux.md` - Linux setup specifics
-- `/docs/setup/os/windows.md` - Windows staged-support specifics
-- `/codex/os/macos/runtime/README.md` - populated runtime module index
-- `/codex/os/linux/runtime/README.md` - Linux placeholder runtime index
-- `/codex/os/windows/runtime/README.md` - Windows placeholder runtime index
-- `/codex/os/macos/runtime/config/config.template.toml` - config template with placeholders
-- `/codex/os/macos/runtime/config/projects.trust.snapshot.toml` - trust snapshot template
-- `/codex/os/macos/runtime/agents/global.AGENTS.md` - global runtime policy snapshot
-- `/codex/os/macos/runtime/rules/default.rules` - portable rules
-- `/codex/os/macos/runtime/rules/default.rules.source.snapshot` - exact source rules snapshot
-- `/codex/os/macos/runtime/meta/toolchain.lock` - toolchain lock snapshot
-- `/codex/os/macos/runtime/skills/manifests/custom-skills.manifest.txt` - custom skill canonical list
+- `/docs/setup/os/macos.md` - macOS setup specifics
+- `/docs/setup/os/windows.md` - Windows setup specifics
+- `/codex/os/linux/runtime/README.md` - primary exported runtime module index
+- `/codex/os/macos/runtime/README.md` - native macOS profile slot contract
+- `/codex/os/windows/runtime/README.md` - native Windows profile slot contract
+- `/codex/os/linux/runtime/config/config.template.toml` - config template with placeholders
+- `/codex/os/linux/runtime/config/projects.trust.snapshot.toml` - trust snapshot template
+- `/codex/os/linux/runtime/agents/global.AGENTS.md` - global runtime policy snapshot
+- `/codex/os/linux/runtime/rules/default.rules` - portable rules
+- `/codex/os/linux/runtime/rules/default.rules.source.snapshot` - exact source rules snapshot
+- `/codex/os/linux/runtime/meta/toolchain.lock` - toolchain lock snapshot
+- `/codex/os/linux/runtime/skills/manifests/custom-skills.manifest.txt` - custom skill canonical list
 - `/codex/os/common/agents/codex-agents/README.md` - shared profile docs
+- `/scripts/os/README.md` - OS installer hierarchy
 - `/templates/AGENTS.md` - reusable repository AGENTS starter template
 
 ## Script contracts
 
 - `/scripts/bootstrap.sh`
-- Installs required CLI layer and runs install/verify pipeline.
+- Installs the required CLI layer for the current OS and runs the install and verify pipeline.
 
 - `/scripts/install.sh`
-- Installs selected runtime payload into `$CODEX_HOME`.
+- Installs the selected runtime payload into `$CODEX_HOME`.
 - Enforces strict no-overlap between shared profiles and custom skills.
 - Supports `--rules-mode exact|portable`.
+- Falls back to the current primary exported payload when a native OS payload is not present yet.
 
 - `/scripts/verify.sh`
 - Validates MCP presence, config substitution, rules consistency, and skill hierarchy integrity.
 
 - `/scripts/export-from-local.sh`
-- Exports local Codex state into repository payload (macOS canonical target).
+- Exports local Codex state into the runtime profile that matches the actual source OS.
 - Sanitizes config placeholders and rejects detected token-like values.
+- Rejects cross-profile export on purpose.
 
 - `/scripts/self-test.sh`
 - Performs clean-room installation and deterministic assertions.
 
 ## Security model
 
-- No real credentials in repository templates.
-- Placeholder-only secrets in config templates.
-- Snapshot export sanitization for known token patterns.
-- Security policy and private disclosure path in `SECURITY.md`.
+- No real credentials in repository templates
+- Placeholder-only secrets in config templates
+- Snapshot export sanitization for known token patterns
+- Security policy and private disclosure path in `SECURITY.md`
 
 ## Community model
 
@@ -73,9 +78,11 @@ It provides deterministic install, verification, and export workflows, with stri
 
 ## Intended discovery terms
 
-- codex configuration
+- codex cli configuration
 - codex mcp setup
-- macos development bootstrap
+- ubuntu codex bootstrap
+- macos codex bootstrap
+- windows codex bootstrap
 - ai cli workstation setup
 - deterministic environment provisioning
 - codex skills baseline

@@ -9,10 +9,11 @@
 ## Setup
 
 - `docs/setup/README.md`
+- `docs/setup/PROFILE_MATRIX.md`
 - `docs/setup/PORTABLE_SETUP.md`
 - `docs/setup/PROD_RUNBOOK.md`
-- `docs/setup/os/macos.md`
 - `docs/setup/os/linux.md`
+- `docs/setup/os/macos.md`
 - `docs/setup/os/windows.md`
 
 ## Agents
@@ -26,10 +27,21 @@
 - `codex/README.md`
 - `codex/os/README.md`
 - `codex/os/common/README.md`
+- `codex/os/linux/README.md`
+- `codex/os/linux/runtime/README.md`
 - `codex/os/macos/README.md`
 - `codex/os/macos/runtime/README.md`
-- `codex/os/linux/runtime/README.md`
+- `codex/os/windows/README.md`
 - `codex/os/windows/runtime/README.md`
+
+## Script Layout
+
+- `scripts/README.md`
+- `scripts/os/README.md`
+- `scripts/os/common/README.md`
+- `scripts/os/linux/README.md`
+- `scripts/os/macos/README.md`
+- `scripts/os/windows/README.md`
 
 ## Templates
 
