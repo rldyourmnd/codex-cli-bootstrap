@@ -4,10 +4,11 @@ Describe what changed and why.
 
 ## Scope
 
-- [ ] docs
-- [ ] codex artifacts
+- [ ] runtime payload
+- [ ] shared agent profiles
 - [ ] scripts
-- [ ] skills
+- [ ] docs
+- [ ] CI / GitHub
 - [ ] governance / OSS files
 
 ## Validation
@@ -20,9 +21,14 @@ Describe what changed and why.
 - [ ] `scripts/self-test.sh` if export/install behavior changed
 - [ ] `scripts/build-release-bundle.sh --output-dir dist` if release packaging or workflows changed
 
-## Safety Checklist
+## Risk And Rollback
+
+List potential risk and how to rollback safely.
+
+## Checklist
 
 - [ ] No secrets or auth state were committed
 - [ ] Documentation was updated where behavior or structure changed
 - [ ] Portability impact was reviewed
+- [ ] No shared/custom skill overlap was introduced
 - [ ] Governance/community files remain accurate

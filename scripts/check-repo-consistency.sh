@@ -3,6 +3,7 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 source "$ROOT_DIR/scripts/os/common/platform.sh"
+source "$ROOT_DIR/scripts/os/common/layout.sh"
 
 say() { echo "[CONSISTENCY] $*"; }
 warn() { echo "[CONSISTENCY][WARN] $*"; }
@@ -10,6 +11,9 @@ err() { echo "[CONSISTENCY][ERROR] $*" >&2; }
 
 require_file() {
   local path="$1"
+  if [[ "$path" != /* ]]; then
+    path="$ROOT_DIR/$path"
+  fi
   if [[ ! -f "$path" ]]; then
     err "Missing required file: $path"
     exit 1
@@ -18,6 +22,9 @@ require_file() {
 
 require_dir() {
   local path="$1"
+  if [[ "$path" != /* ]]; then
+    path="$ROOT_DIR/$path"
+  fi
   if [[ ! -d "$path" ]]; then
     err "Missing required directory: $path"
     exit 1
@@ -32,11 +39,22 @@ require_tool() {
   fi
 }
 
-for tool in bash sed tar base64 awk diff find sort; do
+for tool in bash awk diff find sort python3 rg; do
   require_tool "$tool"
 done
 
 cd "$ROOT_DIR"
+
+MACOS_PROFILE_ROOT="$(profile_runtime_root "macos")"
+COMMON_AGENT_DIR="$(common_agent_skills_root)"
+CUSTOM_SKILLS_DIR="$MACOS_PROFILE_ROOT/skills/custom"
+CUSTOM_MANIFEST="$MACOS_PROFILE_ROOT/skills/manifests/custom-skills.manifest.txt"
+CURATED_MANIFEST="$MACOS_PROFILE_ROOT/skills/manifests/curated-manifest.txt"
+PORTABLE_RULES="$MACOS_PROFILE_ROOT/rules/default.rules"
+RULES_TEMPLATE="$MACOS_PROFILE_ROOT/rules/default.rules.template"
+RULES_SOURCE_SNAPSHOT="$MACOS_PROFILE_ROOT/rules/default.rules.source.snapshot"
+CONFIG_TEMPLATE="$MACOS_PROFILE_ROOT/config/config.template.toml"
+TOOLCHAIN_LOCK="$MACOS_PROFILE_ROOT/meta/toolchain.lock"
 
 required_files=(
   "README.md"
@@ -47,7 +65,10 @@ required_files=(
   "CODE_OF_CONDUCT.md"
   "GOVERNANCE.md"
   "CHANGELOG.md"
-  "CODEOWNERS"
+  "CITATION.cff"
+  "llms.txt"
+  "llms-full.txt"
+  ".github/CODEOWNERS"
   ".github/dependabot.yml"
   ".github/PULL_REQUEST_TEMPLATE.md"
   ".github/ISSUE_TEMPLATE/bug_report.yml"
@@ -56,31 +77,30 @@ required_files=(
   ".github/workflows/ci.yml"
   ".github/workflows/release.yml"
   "docs/README.md"
+  "docs/INDEX.md"
   "docs/ARCHITECTURE.md"
   "docs/setup/README.md"
   "docs/setup/PORTABLE_SETUP.md"
   "docs/setup/PROD_RUNBOOK.md"
+  "docs/setup/os/macos.md"
   "docs/agents/README.md"
   "codex/README.md"
+  "codex/os/README.md"
+  "codex/os/common/README.md"
+  "codex/os/common/agents/README.md"
+  "codex/os/macos/README.md"
   "scripts/README.md"
-  "skills/README.md"
-  "templates/README.md"
-  "templates/AGENTS.md"
-  "codex/config/config.template.toml"
-  "codex/agents/global.AGENTS.md"
-  "codex/meta/toolchain.lock"
-  "codex/skills/custom-skills.manifest.txt"
-  "codex/skills/custom-skills.tar.gz.b64"
-  "codex/skills/custom-skills.sha256"
-  "codex/skills/curated-manifest.txt"
-  "codex/rules/default.rules"
-  "codex/rules/default.rules.template"
-  "codex/rules/default.rules.source.snapshot"
+  "$CONFIG_TEMPLATE"
+  "$MACOS_PROFILE_ROOT/config/projects.local.example.toml"
+  "$MACOS_PROFILE_ROOT/config/projects.trust.snapshot.toml"
+  "$MACOS_PROFILE_ROOT/agents/global.AGENTS.md"
+  "$TOOLCHAIN_LOCK"
+  "$PORTABLE_RULES"
+  "$RULES_TEMPLATE"
+  "$RULES_SOURCE_SNAPSHOT"
+  "$CUSTOM_MANIFEST"
+  "$CURATED_MANIFEST"
 )
-
-for file in "${required_files[@]}"; do
-  require_file "$ROOT_DIR/$file"
-done
 
 required_dirs=(
   ".github"
@@ -89,106 +109,130 @@ required_dirs=(
   "docs/setup"
   "docs/agents"
   "codex"
+  "codex/os"
+  "codex/os/common"
+  "codex/os/common/agents"
+  "$COMMON_AGENT_DIR"
+  "codex/os/macos"
+  "$MACOS_PROFILE_ROOT"
+  "$CUSTOM_SKILLS_DIR"
+  "$MACOS_PROFILE_ROOT/skills/manifests"
   "scripts"
-  "skills"
-  "skills/codex-agents"
-  "templates"
+  "scripts/os"
+  "scripts/os/common"
 )
 
-for dir in "${required_dirs[@]}"; do
-  require_dir "$ROOT_DIR/$dir"
+for file in "${required_files[@]}"; do
+  require_file "$file"
 done
-
+for dir in "${required_dirs[@]}"; do
+  require_dir "$dir"
+done
 say "Required files and directories: OK"
 
-for f in \
-  scripts/install.sh \
-  scripts/verify.sh \
-  scripts/codex-activate.sh \
-  scripts/export-from-local.sh \
-  scripts/bootstrap.sh \
-  scripts/audit-codex-agents.sh \
-  scripts/check-toolchain.sh \
-  scripts/sync-codex-version.sh \
-  scripts/render-portable-rules.sh \
-  scripts/self-test.sh \
-  scripts/check-repo-consistency.sh \
-  scripts/build-release-bundle.sh \
-  scripts/install-codex-agents.sh \
-  scripts/os/common/platform.sh \
-  scripts/os/macos/install/ensure-codex.sh \
-  scripts/os/linux/install/ensure-codex.sh \
-  scripts/os/macos/install/ensure-claude-code.sh \
-  scripts/os/linux/install/ensure-claude-code.sh; do
-  bash -n "$f"
-done
-
+while IFS= read -r script; do
+  bash -n "$script"
+done < <(find scripts -type f -name '*.sh' | sort)
 say "Shell syntax: OK"
 
-tmp_rules="$(mktemp)"
-trap 'rm -f "${tmp_rules:-}" "${tmp_archive:-}"' EXIT
-scripts/render-portable-rules.sh "$tmp_rules"
-if ! diff -u "$tmp_rules" codex/rules/default.rules >/dev/null; then
-  err "Portable rules drift detected: codex/rules/default.rules is not rendered from codex/skills/curated-manifest.txt"
-  exit 1
-fi
-if ! diff -u "$tmp_rules" codex/rules/default.rules.template >/dev/null; then
-  err "Portable rules template drift detected: codex/rules/default.rules.template is not aligned with rendered output"
-  exit 1
-fi
+python3 - <<'PY'
+import tomllib
+from pathlib import Path
 
+path = Path("codex/os/macos/runtime/config/config.template.toml")
+data = tomllib.loads(path.read_text(encoding="utf-8"))
+assert data.get("approval_policy") == "never"
+assert data.get("sandbox_mode") == "danger-full-access"
+text = path.read_text(encoding="utf-8")
+assert "__CONTEXT7_API_KEY__" in text
+assert "__GITHUB_MCP_TOKEN__" in text
+for needle in ("ctx7sk-", "gho_", "ghp_", "github_pat_"):
+    assert needle not in text
+print("config template OK")
+PY
+say "Config template: OK"
+
+tmp_rules="$(mktemp)"
+trap 'rm -f "${tmp_rules:-}"' EXIT
+scripts/render-portable-rules.sh "$tmp_rules"
+if ! diff -u "$tmp_rules" "$PORTABLE_RULES" >/dev/null; then
+  err "Portable rules drift detected: $PORTABLE_RULES is not rendered from $CURATED_MANIFEST"
+  exit 1
+fi
+if ! diff -u "$tmp_rules" "$RULES_TEMPLATE" >/dev/null; then
+  err "Portable rules template drift detected: $RULES_TEMPLATE is not aligned with rendered output"
+  exit 1
+fi
 say "Portable rules rendering: OK"
 
-tmp_archive="$(mktemp_with_suffix .tar.gz)"
-base64_decode_file codex/skills/custom-skills.tar.gz.b64 "$tmp_archive"
-archive_sha="$(sha256_file "$tmp_archive")"
-expected_sha="$(cat codex/skills/custom-skills.sha256)"
-if [[ "$archive_sha" != "$expected_sha" ]]; then
-  err "Custom skills archive checksum mismatch"
+mapfile -t manifest_skills < <(read_nonempty_lines "$CUSTOM_MANIFEST" | sort)
+mapfile -t custom_dirs < <(find "$CUSTOM_SKILLS_DIR" -mindepth 1 -maxdepth 1 -type d -printf '%f\n' | sort)
+mapfile -t shared_profiles < <(find "$COMMON_AGENT_DIR" -mindepth 1 -maxdepth 1 -type d -printf '%f\n' | sort)
+mapfile -t doc_profiles < <(find docs/agents -mindepth 1 -maxdepth 1 -type f -name '*.md' -printf '%f\n' | sed 's/\.md$//' | grep -v '^README$' | sort)
+
+if [[ ${#manifest_skills[@]} -eq 0 ]]; then
+  err "Custom skill manifest is empty: $CUSTOM_MANIFEST"
   exit 1
 fi
-
-archive_skills="$(tar -tzf "$tmp_archive" | awk -F/ 'NF>1 && $1 != "." {print $1} NF>2 && $1=="." {print $2}' | sed '/^$/d' | sort -u)"
-manifest_skills="$(read_nonempty_lines codex/skills/custom-skills.manifest.txt | sort)"
-
-if [[ "$archive_skills" != "$manifest_skills" ]]; then
-  err "Custom skills archive contents do not match codex/skills/custom-skills.manifest.txt"
+if [[ ${#custom_dirs[@]} -eq 0 ]]; then
+  err "No custom skill directories found in $CUSTOM_SKILLS_DIR"
+  exit 1
+fi
+if [[ "$(printf '%s\n' "${manifest_skills[@]}")" != "$(printf '%s\n' "${custom_dirs[@]}")" ]]; then
+  err "Custom skill manifest and custom skill directories are out of sync"
   echo "[CONSISTENCY] Manifest skills:"
-  printf '%s\n' "$manifest_skills"
-  echo "[CONSISTENCY] Archive skills:"
-  printf '%s\n' "$archive_skills"
+  printf '%s\n' "${manifest_skills[@]}"
+  echo "[CONSISTENCY] Directory skills:"
+  printf '%s\n' "${custom_dirs[@]}"
   exit 1
 fi
 
-say "Custom skills archive and manifest: OK"
+for skill in "${custom_dirs[@]}"; do
+  require_file "$CUSTOM_SKILLS_DIR/$skill/SKILL.md"
+done
+say "Custom skills and manifest: OK"
 
-skill_profiles="$(find skills/codex-agents -mindepth 1 -maxdepth 1 -type d | sed 's|.*/||' | sort)"
-doc_profiles="$(find docs/agents -mindepth 1 -maxdepth 1 -type f -name '*.md' | sed 's|.*/||' | sed 's/\.md$//' | grep -v '^README$' | sort)"
-
-if [[ "$skill_profiles" != "$doc_profiles" ]]; then
-  err "docs/agents and skills/codex-agents are out of sync"
-  echo "[CONSISTENCY] Skill profiles:"
-  printf '%s\n' "$skill_profiles"
-  echo "[CONSISTENCY] Doc profiles:"
-  printf '%s\n' "$doc_profiles"
+overlap="$(comm -12 <(printf '%s\n' "${shared_profiles[@]}") <(printf '%s\n' "${custom_dirs[@]}"))"
+if [[ -n "$overlap" ]]; then
+  err "Shared agent profiles overlap with custom skills:"
+  printf '%s\n' "$overlap"
   exit 1
 fi
+say "Shared/custom skill split: OK"
 
-say "Agent docs and skill directories: OK"
+if [[ "$(printf '%s\n' "${shared_profiles[@]}")" != "$(printf '%s\n' "${doc_profiles[@]}")" ]]; then
+  err "docs/agents and shared agent profile directories are out of sync"
+  echo "[CONSISTENCY] Shared profiles:"
+  printf '%s\n' "${shared_profiles[@]}"
+  echo "[CONSISTENCY] Docs:"
+  printf '%s\n' "${doc_profiles[@]}"
+  exit 1
+fi
+say "Agent docs and shared profiles: OK"
 
 for banned in code-reviewer figma-implement-design security-ownership-map; do
-  if grep -RIn --exclude-dir=.git --exclude=CHANGELOG.md --exclude=check-repo-consistency.sh -- "$banned" . >/dev/null 2>&1; then
-    err "Found stale banned reference: $banned"
+  if rg -n --hidden \
+    --glob '!CHANGELOG.md' \
+    --glob '!scripts/check-repo-consistency.sh' \
+    --glob '!.git/*' \
+    "$banned" . >/dev/null; then
+    err "Found stale removed-skill reference: $banned"
     exit 1
   fi
 done
-
 say "No stale removed-skill references: OK"
 
-if [[ -e codex/os/macos/snapshots/full-home/archive.tar.gz.b64 ]] || [[ -e codex/os/macos/snapshots/full-home/archive.sha256 ]] || [[ -e codex/os/macos/snapshots/full-home/manifest.txt ]]; then
-  err "macOS full-home snapshot artifacts should be either fully maintained or absent; stale files found"
+legacy_layout_hits="$(rg -n --hidden \
+  --glob '!CHANGELOG.md' \
+  --glob '!scripts/check-repo-consistency.sh' \
+  --glob '!.git/*' \
+  'codex/config/|codex/agents/|codex/meta/|codex/rules/|codex/skills/custom-skills|skills/codex-agents|skills/README\.md|templates/README\.md|codex-workstation-bootstrap' \
+  README.md docs codex scripts .github llms.txt llms-full.txt CITATION.cff CONTRIBUTING.md SECURITY.md SUPPORT.md CODE_OF_CONDUCT.md GOVERNANCE.md 2>/dev/null || true)"
+if [[ -n "$legacy_layout_hits" ]]; then
+  err "Found stale legacy layout references"
+  printf '%s\n' "$legacy_layout_hits"
   exit 1
 fi
+say "No stale legacy layout references: OK"
 
-say "OS snapshot layout sanity: OK"
 say "Repository consistency check passed"

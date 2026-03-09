@@ -1,10 +1,8 @@
 # Codex Environment Runbook
 
-This runbook is for operating this repository as a production-grade Codex environment mirror.
-The canonical step-by-step restore workflow lives in [`PORTABLE_SETUP.md`](PORTABLE_SETUP.md).
-This document focuses on repeatable operations, rollback, and drift control around that workflow.
+This runbook covers repeatable operations, rollback, and drift control around the canonical setup flow described in [`PORTABLE_SETUP.md`](PORTABLE_SETUP.md).
 
-## 1. Source machine update flow
+## Source Machine Update
 
 ```bash
 scripts/export-from-local.sh
@@ -13,68 +11,15 @@ scripts/audit-codex-agents.sh
 scripts/self-test.sh
 ```
 
-Expected result: all commands succeed.
-Export now hard-fails on empty source `AGENTS.md` or empty non-system skills snapshot to prevent drift/corruption.
-
-Absolute mirror variant:
-
-```bash
-scripts/export-from-local.sh --with-full-home
-scripts/self-test.sh
-```
-
-## 2. Target machine restore flow (exact parity)
-
-Canonical restore instruction:
-
-```bash
-scripts/bootstrap.sh --skip-curated
-```
-
-Reference:
-- [`PORTABLE_SETUP.md`](PORTABLE_SETUP.md)
-
-Required environment variables:
+## Target Machine Restore (Exact Mirror)
 
 ```bash
 export CONTEXT7_API_KEY='ctx7sk-...'
 export GITHUB_MCP_TOKEN="$(gh auth token)"
+scripts/bootstrap.sh --skip-curated
 ```
 
-Restore guarantees:
-- installs repository baseline 9 agent skills (`skills/codex-agents`),
-- installs full snapshot skill set from `codex/skills/custom-skills.*`.
-
-Codex install by OS:
-
-macOS:
-
-```bash
-brew install --cask codex
-```
-
-Linux:
-
-```bash
-npm i -g @openai/codex
-```
-
-Full-home restore (absolute mirror, same OS family):
-
-```bash
-scripts/bootstrap.sh --skip-curated --full-home
-```
-
-Restore Codex + Claude Code:
-
-```bash
-scripts/bootstrap.sh --skip-curated --with-claude-code
-```
-
-## 3. Target machine restore flow (portable-safe)
-
-Reference:
-- [`PORTABLE_SETUP.md`](PORTABLE_SETUP.md)
+## Target Machine Restore (Portable-Safe)
 
 ```bash
 export CONTEXT7_API_KEY='ctx7sk-...'
@@ -82,9 +27,7 @@ export GITHUB_MCP_TOKEN="$(gh auth token)"
 scripts/bootstrap.sh --skip-curated --portable-rules --skip-project-trust --no-sync-codex-version --no-strict-toolchain
 ```
 
-## 4. Validation gates
-
-Run all gates after restore:
+## Validation Gates
 
 ```bash
 scripts/check-toolchain.sh --strict-codex-only
@@ -93,32 +36,28 @@ scripts/audit-codex-agents.sh
 scripts/codex-activate.sh --check-only
 ```
 
-Full-home validation:
+## Parity Model
 
-```bash
-scripts/verify.sh --full-home
-```
+- 6 MCP entries in the config template
+- 23 direct custom skills under `codex/os/macos/runtime/skills/custom/*`
+- 9 shared Codex agent profiles under `codex/os/common/agents/codex-agents/*`
+- global `AGENTS.md` snapshot from the source machine
+- strict no-overlap rule between custom and shared skill groups
 
-## 5. Rollback
+## Rollback
 
-Install script creates timestamped backups in `~/.codex`:
+Install creates backups in `~/.codex` for overwritten files:
 
 - `config.toml.bak.<timestamp>`
 - `AGENTS.md.bak.<timestamp>`
 - `rules/default.rules.bak.<timestamp>`
 
-Rollback example:
+Restore an earlier file version by copying the desired backup over the active file.
 
-```bash
-cp ~/.codex/config.toml.bak.<timestamp> ~/.codex/config.toml
-cp ~/.codex/AGENTS.md.bak.<timestamp> ~/.codex/AGENTS.md
-cp ~/.codex/rules/default.rules.bak.<timestamp> ~/.codex/rules/default.rules
-```
+## Drift Management
 
-## 6. Drift management
-
-- `scripts/render-portable-rules.sh` keeps portable rules synchronized with `codex/skills/curated-manifest.txt`.
-- `scripts/check-toolchain.sh` detects toolchain drift against `codex/meta/toolchain.lock`.
-- `scripts/sync-codex-version.sh --apply` pins Codex CLI to exported version.
-- Full-home snapshots are organized by OS at `codex/os/<os>/snapshots/full-home/`.
-- Windows is included as installer/snapshot skeleton under `scripts/os/windows/install/` and `codex/os/windows/`.
+- `scripts/render-portable-rules.sh` keeps portable rules synchronized with `curated-manifest.txt`
+- `scripts/check-toolchain.sh` detects version drift against `toolchain.lock`
+- `scripts/sync-codex-version.sh --apply` re-pins the Codex CLI
+- `scripts/check-repo-consistency.sh` validates repository structure before release
+- `scripts/build-release-bundle.sh` builds the tagged portable bundle consumed by GitHub Releases

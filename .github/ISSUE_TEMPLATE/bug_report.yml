@@ -1,35 +1,38 @@
 name: Bug report
-description: Report a reproducible bug in the runtime mirror, scripts, docs, or skill baseline
+description: Report a reproducible bug or regression in the runtime mirror, docs, or automation stack
 title: "[bug] "
-labels:
-  - bug
+labels: ["bug"]
 body:
-  - type: textarea
-    id: summary
+  - type: markdown
     attributes:
-      label: Summary
-      description: What is broken?
-    validations:
-      required: true
+      value: |
+        Please provide enough detail to reproduce the issue safely.
+        Redact secrets, tokens, and private runtime state.
   - type: dropdown
     id: module
     attributes:
       label: Affected module
       options:
-        - docs
-        - codex
+        - runtime payload
+        - shared agent profiles
         - scripts
-        - skills
-        - bootstrap
-        - verification
+        - docs
+        - CI / GitHub
         - other
     validations:
       required: true
-  - type: textarea
-    id: steps
+  - type: input
+    id: os
     attributes:
-      label: Reproduction steps
-      description: Exact commands or steps to reproduce the problem
+      label: OS
+      placeholder: macOS 15.x, Ubuntu 24.04, Windows 11
+    validations:
+      required: true
+  - type: textarea
+    id: command
+    attributes:
+      label: Command or reproduction steps
+      description: Exact commands or actions needed to reproduce the problem
     validations:
       required: true
   - type: textarea
@@ -48,6 +51,14 @@ body:
     id: environment
     attributes:
       label: Environment
-      description: OS, Codex version, Node/npm/Python/uv/gh versions, and any relevant context
+      description: Codex, Node, npm, Python, uv, and gh versions plus any relevant context
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs or output
+      description: Paste relevant output with secrets redacted
+      render: shell
     validations:
       required: true

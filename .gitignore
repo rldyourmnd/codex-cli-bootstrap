@@ -3,9 +3,20 @@
 *.token*
 .env
 .env.*
+.DS_Store
+Thumbs.db
 
 # Local Serena runtime state
 .serena/
 
-# Local release bundle output
+# Local runtime and generated output
 dist/
+.playwright-mcp/
+
+# AI assistant local artifacts
+**/AGENTS.md
+**/CLAUDE.md
+**/.claude/
+**/.serena/
+**/.cursor/
+**/.aider*

@@ -1,8 +1,7 @@
 name: Feature request
 description: Propose a documented, portable improvement to the repository or runtime baseline
 title: "[feature] "
-labels:
-  - enhancement
+labels: ["enhancement"]
 body:
   - type: textarea
     id: problem
@@ -16,12 +15,11 @@ body:
     attributes:
       label: Affected module
       options:
-        - docs
-        - codex
+        - runtime payload
+        - shared agent profiles
         - scripts
-        - skills
-        - bootstrap
-        - verification
+        - docs
+        - CI / GitHub
         - governance
         - other
     validations:
@@ -29,7 +27,7 @@ body:
   - type: textarea
     id: proposal
     attributes:
-      label: Proposed change
+      label: Proposed solution
     validations:
       required: true
   - type: textarea

@@ -10,20 +10,21 @@
 
 Use GitHub issues for:
 
-- reproducible bugs,
-- documentation problems,
-- feature requests,
-- portability regressions.
+- reproducible bugs
+- documentation problems
+- feature requests
+- portability regressions
 
 Please include:
 
-- your OS,
-- your Codex/toolchain versions,
-- the command you ran,
-- the observed result,
-- the expected result.
+- OS and version
+- Codex, Node, npm, Python, uv, and gh versions when relevant
+- the command you ran
+- the observed result
+- the expected result
+- relevant file paths or config snippets with secrets redacted
 
 ## Private Or Sensitive Issues
 
 - Use [`SECURITY.md`](SECURITY.md) for vulnerability reports.
-- Use official NDDev channels for private organizational coordination when public GitHub issues are not appropriate.
+- Use direct maintainer contact or official NDDev channels when public GitHub issues are not appropriate.

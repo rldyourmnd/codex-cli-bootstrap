@@ -11,14 +11,19 @@ This project expects respectful, professional, and technically grounded collabor
 
 ## Unacceptable Behavior
 
-- Harassment, discrimination, or personal attacks
+- Harassment, discrimination, intimidation, or personal attacks
 - Publishing private information without permission
 - Abusive, deceptive, or intentionally disruptive conduct
 - Knowingly introducing secrets or unsafe content into the repository
 
 ## Enforcement
 
-The project owner and delegated maintainers may edit, hide, lock, or remove content and may restrict repository participation when conduct violates this policy.
+The project owner and delegated maintainers may edit, hide, lock, remove, or reject content and may restrict repository participation when conduct violates this policy.
+
+## Reporting
+
+For conduct issues, contact the maintainers through repository moderation channels.
+If the issue is sensitive and should not be reported publicly, use direct maintainer contact instead.
 
 ## Scope
 

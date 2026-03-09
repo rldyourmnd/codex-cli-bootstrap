@@ -1,7 +1,7 @@
 # macOS Setup
 
-Use this guide when restoring the portable Codex baseline onto macOS.
-Read [`../README.md`](../README.md) and [`../PORTABLE_SETUP.md`](../PORTABLE_SETUP.md) first if you need the broader flow.
+Profile payload lives under `codex/os/macos/runtime/*`.
+Read [`../PORTABLE_SETUP.md`](../PORTABLE_SETUP.md) first if you need the broader restore model.
 
 ## 1. Install Codex
 
@@ -15,7 +15,7 @@ scripts/os/macos/install/ensure-codex.sh
 scripts/os/macos/install/ensure-claude-code.sh
 ```
 
-## 3. Restore Codex Mirror
+## 3. Restore Codex mirror
 
 ```bash
 export CONTEXT7_API_KEY='ctx7sk-...'

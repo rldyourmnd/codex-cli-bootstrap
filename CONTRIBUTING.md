@@ -1,13 +1,16 @@
 # Contributing
 
-Thank you for contributing to `better-codex`.
+Thank you for contributing to `codex-cli-bootstrap`.
 
 This repository is both an automation codebase and a public mirror of a working Codex environment.
-Changes must preserve reproducibility, safety, and documentation clarity.
+Changes must preserve reproducibility, deterministic structure, safety, and documentation clarity.
 
 ## Before You Start
 
 - Read [`README.md`](README.md), [`docs/README.md`](docs/README.md), and [`GOVERNANCE.md`](GOVERNANCE.md).
+- Understand the current payload split:
+  - shared agent profiles live under `codex/os/common/agents/codex-agents`
+  - custom skills live under `codex/os/macos/runtime/skills/custom`
 - Do not commit secrets, private auth state, or runtime logs.
 - Keep changes focused and auditable.
 
@@ -16,6 +19,8 @@ Changes must preserve reproducibility, safety, and documentation clarity.
 - Use English for code, docs, commit messages, and review discussions in the repository.
 - Prefer atomic pull requests.
 - Use conventional commit style where practical.
+- Keep the `codex/os/*` hierarchy deterministic and path-consistent.
+- Do not introduce overlap between shared agent profile names and custom skill names.
 - Update documentation whenever behavior, structure, or operator workflow changes.
 - If you change export/install/parity logic, update the relevant docs under `docs/` and module `README` files.
 
@@ -48,9 +53,10 @@ scripts/build-release-bundle.sh --output-dir dist
 - Explain what changed and why.
 - Call out any portability impact.
 - Call out any security impact.
+- Call out rollback impact when behavior changed.
 - Include documentation updates when structure or behavior changed.
 - Do not remove repository-owned baseline skills or governance files without explicit maintainer approval.
 
 ## Review Authority
 
-Final merge authority remains with the project owner, Danil Silantyev (`rldyourmnd`), and maintainers delegated by the owner.
+Final merge authority remains with Danil Silantyev (`rldyourmnd`), Global CEO of NDDev, and maintainers delegated by the owner.

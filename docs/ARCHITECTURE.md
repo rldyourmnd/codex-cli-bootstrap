@@ -1,19 +1,21 @@
 # Repository Architecture
 
-This document explains how `better-codex` is organized and how its artifacts flow between a source machine, the repository, and a restored target machine.
+This document explains how `codex-cli-bootstrap` is organized and how its artifacts flow between a source machine, the repository, and a restored target machine.
 
 ## Mental Model
 
 The repository has three layers:
 
 1. Repository-owned baseline
-   - source-controlled skill definitions in `skills/codex-agents/`
+   - source-controlled shared agent profiles in `codex/os/common/agents/codex-agents/`
    - source-controlled docs in `docs/`
    - source-controlled automation in `scripts/`
 2. Exported portable runtime state
-   - sanitized config, rules, manifests, and packed skill snapshots in `codex/`
-3. Optional machine-specific absolute snapshot layer
-   - per-OS full-home snapshots under `codex/os/<os>/snapshots/full-home/`
+   - sanitized config, rules, manifests, and direct custom skill payloads in `codex/os/macos/runtime/`
+3. OS layout namespace
+   - shared payload under `codex/os/common/`
+   - populated runtime profile under `codex/os/macos/runtime/`
+   - placeholder runtime roots under `codex/os/linux/runtime/` and `codex/os/windows/runtime/`
 
 The repository-owned baseline explains how the system should work.
 The exported runtime state captures what was actually installed on the source machine at export time.
@@ -33,25 +35,26 @@ The source machine has a real `~/.codex` tree with:
 
 `scripts/export-from-local.sh` reads the source machine state and updates:
 
-- `codex/config/config.template.toml`
-- `codex/agents/global.AGENTS.md`
-- `codex/rules/default.rules.source.snapshot`
-- `codex/skills/custom-skills.manifest.txt`
-- `codex/skills/custom-skills.tar.gz.b64`
-- `codex/meta/toolchain.lock`
-
-If requested with `--with-full-home`, it also exports a full-home snapshot for the current OS family.
+- `codex/os/macos/runtime/config/config.template.toml`
+- `codex/os/macos/runtime/config/projects.trust.snapshot.toml`
+- `codex/os/macos/runtime/agents/global.AGENTS.md`
+- `codex/os/macos/runtime/rules/default.rules.source.snapshot`
+- `codex/os/macos/runtime/rules/default.rules`
+- `codex/os/macos/runtime/rules/default.rules.template`
+- `codex/os/macos/runtime/skills/custom/*`
+- `codex/os/macos/runtime/skills/manifests/custom-skills.manifest.txt`
+- `codex/os/macos/runtime/meta/toolchain.lock`
 
 ### 3. Portable render step
 
 `scripts/render-portable-rules.sh` generates:
 
-- `codex/rules/default.rules`
-- `codex/rules/default.rules.template`
+- `codex/os/macos/runtime/rules/default.rules`
+- `codex/os/macos/runtime/rules/default.rules.template`
 
 from:
 
-- `codex/skills/curated-manifest.txt`
+- `codex/os/macos/runtime/skills/manifests/curated-manifest.txt`
 
 This keeps the portable rule baseline deterministic and readable.
 
@@ -61,10 +64,10 @@ This keeps the portable rule baseline deterministic and readable.
 
 - the portable config and AGENTS baseline,
 - the selected rules mode,
-- the exported custom skill snapshot,
-- the repository-owned baseline skills from `skills/codex-agents/`.
+- the exported direct custom skill payload,
+- the repository-owned shared agent profiles from `codex/os/common/agents/codex-agents/`.
 
-The repository-owned baseline skills are re-applied after custom skill restore so that the repository stays authoritative for those agent profiles.
+The shared agent profiles remain a distinct layer so the repository stays authoritative for those profiles without overlapping custom skill names.
 
 ### 5. Verification
 
@@ -78,16 +81,16 @@ The target machine is validated with:
 ## Directory Responsibilities
 
 - `docs/`: human-facing wiki and operator docs
-- `codex/`: exported artifacts and portable machine-readable state
+- `codex/`: top-level exported artifact namespace
+- `codex/os/common/`: shared payload used across profiles
+- `codex/os/macos/runtime/`: canonical populated runtime payload
 - `scripts/`: operational lifecycle entrypoints
-- `skills/`: repository-owned agent skill source
-- `templates/`: reusable project templates based on this baseline
 
 ## Truth Boundaries
 
 - If a change affects install/export behavior, `scripts/` and `docs/` must be updated together.
-- If a change affects the baseline skill set, `skills/`, `codex/skills/`, and verification scripts must stay aligned.
-- If a change affects runtime versions, `codex/meta/toolchain.lock` and toolchain validation must remain consistent.
+- If a change affects the baseline skill set, `codex/os/common/agents/`, `codex/os/macos/runtime/skills/`, and verification scripts must stay aligned.
+- If a change affects runtime versions, `codex/os/macos/runtime/meta/toolchain.lock` and toolchain validation must remain consistent.
 
 ## What This Repository Intentionally Does Not Mirror By Default
 

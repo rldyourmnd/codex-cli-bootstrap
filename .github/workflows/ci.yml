@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches:
-      - main
+    branches: ["main"]
   pull_request:
+    branches: ["main"]
   workflow_dispatch:
 
 concurrency:
@@ -36,12 +36,17 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v5
 
+      - name: Install runner dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y rsync ripgrep
+
       - name: Build release bundle
         run: bash ./scripts/build-release-bundle.sh --output-dir dist --version "ci-${GITHUB_RUN_NUMBER}"
 
       - name: Upload dry-run release bundle
         uses: actions/upload-artifact@v4
         with:
-          name: better-codex-ci-bundle
+          name: codex-cli-bootstrap-ci-bundle
           path: dist/
           if-no-files-found: error

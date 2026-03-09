@@ -1,26 +1,27 @@
 # Codex Artifact Layout
 
-This directory contains the exported, portable representation of the Codex runtime baseline.
+This directory is the top-level namespace for the exported Codex runtime baseline.
 
-## Submodules
+## Layout
 
-- `agents/`: exported global `AGENTS.md` snapshot
-- `config/`: sanitized `config.toml` template and project trust snapshot
-- `meta/`: toolchain lock and exported runtime versions
-- `os/`: optional per-OS full-home snapshot locations
-- `rules/`: portable rules, source snapshot, and portable template
-- `skills/`: custom skill snapshot archive, checksum, exact manifest, and curated manifest
+- `os/README.md`: OS payload overview
+- `os/common/`: shared payload used across OS profiles
+- `os/common/agents/codex-agents/`: shared Codex agent profile source of truth
+- `os/macos/runtime/`: canonical populated runtime payload
+- `os/linux/runtime/`: placeholder runtime root for future Linux payloads
+- `os/windows/runtime/`: placeholder runtime root for future Windows payloads
 
 ## Source-Of-Truth Rules
 
-- `config.template.toml` is the portable configuration baseline
-- `default.rules.source.snapshot` reflects the source machine's exact exported rules
-- `default.rules` and `default.rules.template` are rendered from `skills/curated-manifest.txt`
-- `custom-skills.manifest.txt` and `custom-skills.tar.gz.b64` reflect the exact local non-system skill set at export time
-- `toolchain.lock` defines the expected runtime versions for strict parity checks
+- `os/macos/runtime/config/config.template.toml` is the portable configuration baseline
+- `os/macos/runtime/config/projects.trust.snapshot.toml` stores sanitized project trust entries
+- `os/macos/runtime/rules/default.rules.source.snapshot` reflects the source machine's exact exported rules
+- `os/macos/runtime/rules/default.rules` and `default.rules.template` are rendered from `os/macos/runtime/skills/manifests/curated-manifest.txt`
+- `os/macos/runtime/skills/manifests/custom-skills.manifest.txt` reflects the exact custom skill set at export time
+- `os/macos/runtime/meta/toolchain.lock` defines the expected runtime versions for strict parity checks
 
 ## Notes
 
-- Full-home snapshots are optional and may be absent for some OS families until a matching export is intentionally produced.
-- Placeholder directories under `os/` exist to keep repository layout stable across platforms.
+- The current export model is direct-files only. Packed custom skill archives are intentionally no longer part of the canonical layout.
+- Shared agent profiles and custom skills are separated by directory and by install logic.
 - Portable artifacts in this directory are consumed by the lifecycle scripts documented in [`../scripts/README.md`](../scripts/README.md).

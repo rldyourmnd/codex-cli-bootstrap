@@ -3,34 +3,23 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 source "$ROOT_DIR/scripts/os/common/platform.sh"
-
-FULL_HOME_MODE=false
-
-while [[ $# -gt 0 ]]; do
-  case "$1" in
-    --full-home)
-      FULL_HOME_MODE=true
-      shift
-      ;;
-    *)
-      echo "[ERROR] Unknown argument: $1"
-      echo "Usage: scripts/verify.sh [--full-home]"
-      exit 1
-      ;;
-  esac
-done
+source "$ROOT_DIR/scripts/os/common/layout.sh"
 
 CODEX_HOME_DIR="${CODEX_HOME:-$HOME/.codex}"
 CONFIG_FILE="$CODEX_HOME_DIR/config.toml"
 GLOBAL_AGENTS_FILE="$CODEX_HOME_DIR/AGENTS.md"
 RULES_FILE="$CODEX_HOME_DIR/rules/default.rules"
-RULES_MODE_FILE="$CODEX_HOME_DIR/.better-codex-rules-mode"
+RULES_MODE_FILE="$CODEX_HOME_DIR/.codex-cli-bootstrap-rules-mode"
 SKILLS_DIR="$CODEX_HOME_DIR/skills"
 SKILLS_ROOT="$SKILLS_DIR"
-CUSTOM_MANIFEST="$ROOT_DIR/codex/skills/custom-skills.manifest.txt"
 TOOLCHAIN_CHECK="$ROOT_DIR/scripts/check-toolchain.sh"
-PROJECT_TRUST_SNAPSHOT="$ROOT_DIR/codex/config/projects.trust.snapshot.toml"
-AGENT_BASELINE_DIR="$ROOT_DIR/skills/codex-agents"
+
+REQUESTED_PROFILE="$(detect_profile_os)"
+PROFILE_OS="$(resolve_profile_os "$REQUESTED_PROFILE")"
+PROFILE_ROOT="$(resolve_runtime_root "$REQUESTED_PROFILE")"
+CUSTOM_MANIFEST="$PROFILE_ROOT/skills/manifests/custom-skills.manifest.txt"
+PROJECT_TRUST_SNAPSHOT="$PROFILE_ROOT/config/projects.trust.snapshot.toml"
+AGENT_BASELINE_DIR="$(common_agent_skills_root)"
 
 REQUIRED_MCPS=(
   "context7"
@@ -41,48 +30,29 @@ REQUIRED_MCPS=(
   "playwright"
 )
 
-DEFAULT_REQUIRED_CUSTOM_SKILLS=(
-  "agent-development"
-  "better-code-review"
-  "better-debugger"
-  "better-explorer"
-  "better-plan"
-  "better-think"
-  "cloudflare-deploy"
-  "codex-md-improver"
-  "command-development"
-  "create-project"
-  "frontend-design"
-  "gh-address-comments"
-  "gh-fix-ci"
-  "github-server-sync"
-  "hook-development"
-  "init-project"
-  "manual-tester"
-  "openai-docs"
-  "pdf"
-  "playwright"
-  "pptx"
-  "search-strategy"
-  "security-best-practices"
-  "security-threat-model"
-  "serena-sync"
-  "spreadsheet"
-  "sql-queries"
-  "status"
-  "version-patrol"
-  "webapp-testing"
-  "writing-rules"
-  "yeet"
-)
-
 say() { echo "[INFO] $*"; }
 warn() { echo "[WARN] $*"; }
 err() { echo "[ERROR] $*"; }
 
+array_contains() {
+  local needle="$1"
+  shift
+  local item
+  for item in "$@"; do
+    if [[ "$item" == "$needle" ]]; then
+      return 0
+    fi
+  done
+  return 1
+}
+
 if ! command -v codex >/dev/null 2>&1; then
   err "codex CLI not found"
   exit 1
+fi
+
+if [[ "$REQUESTED_PROFILE" != "$PROFILE_OS" ]]; then
+  warn "Profile '$REQUESTED_PROFILE' has no payload, using '$PROFILE_OS'"
 fi
 
 if [[ ! -x "$TOOLCHAIN_CHECK" ]]; then
@@ -127,19 +97,6 @@ if [[ -z "$status" ]]; then
 fi
 
 for mcp in "${REQUIRED_MCPS[@]}"; do
-  if $FULL_HOME_MODE; then
-    if ! grep -Eq "^${mcp}[[:space:]]+" <<<"$status"; then
-      warn "Full-home mode: MCP '$mcp' not present"
-      continue
-    fi
-    if ! grep -E "^${mcp}[[:space:]].*[[:space:]]enabled([[:space:]]|$)" <<<"$status" >/dev/null; then
-      warn "Full-home mode: MCP '$mcp' is configured but disabled"
-      continue
-    fi
-    say "MCP configured: $mcp"
-    continue
-  fi
-
   if ! grep -Eq "^${mcp}[[:space:]]+" <<<"$status"; then
     err "Missing MCP: $mcp"
     exit 1
@@ -181,7 +138,6 @@ else
   warn "Rules do not include explicit gh prefix rule"
 fi
 
-forbidden_rule_hits="$(grep -nE 'install-claude-local-skills\.sh|rld-better-ai-usage|git", "add", "\."|git", "push", "origin", "main"' "$RULES_FILE" || true)"
 rules_mode="portable"
 if [[ -f "$RULES_MODE_FILE" ]]; then
   rules_mode="$(head -n1 "$RULES_MODE_FILE" | tr -d '\r')"
@@ -189,14 +145,6 @@ fi
 if [[ "$rules_mode" != "portable" && "$rules_mode" != "exact" ]]; then
   err "Invalid rules mode marker in $RULES_MODE_FILE: $rules_mode"
   exit 1
-fi
-
-if [[ "$rules_mode" == "portable" && -n "$forbidden_rule_hits" ]]; then
-  err "Rules contain non-portable or over-broad allow entries (portable mode):"
-  echo "$forbidden_rule_hits"
-  exit 1
-elif [[ "$rules_mode" == "exact" && -n "$forbidden_rule_hits" ]]; then
-  warn "Exact mode keeps source rules; non-portable entries detected."
 fi
 
 if [[ -f "$PROJECT_TRUST_SNAPSHOT" ]] && grep -Eq '^\[projects\.' "$PROJECT_TRUST_SNAPSHOT"; then
@@ -207,29 +155,18 @@ if [[ -f "$PROJECT_TRUST_SNAPSHOT" ]] && grep -Eq '^\[projects\.' "$PROJECT_TRUS
   fi
 fi
 
-if [[ -f "$CUSTOM_MANIFEST" ]]; then
-  REQUIRED_CUSTOM_SKILLS=()
-  while IFS= read -r line; do
-    REQUIRED_CUSTOM_SKILLS+=("$line")
-  done < <(read_nonempty_lines "$CUSTOM_MANIFEST")
-  if [[ ${#REQUIRED_CUSTOM_SKILLS[@]} -eq 0 ]]; then
-    err "Snapshot skills manifest is empty: $CUSTOM_MANIFEST"
-    exit 1
-  fi
-else
-  REQUIRED_CUSTOM_SKILLS=("${DEFAULT_REQUIRED_CUSTOM_SKILLS[@]}")
+if [[ ! -f "$CUSTOM_MANIFEST" ]]; then
+  err "Snapshot skills manifest missing: $CUSTOM_MANIFEST"
+  exit 1
 fi
 
-if $FULL_HOME_MODE; then
-  say "Full-home mode: skipping fixed custom skill manifest checks"
-  say "Verification passed"
-  exit 0
-fi
-
+REQUIRED_CUSTOM_SKILLS=()
+while IFS= read -r line; do
+  REQUIRED_CUSTOM_SKILLS+=("$line")
+done < <(read_nonempty_lines "$CUSTOM_MANIFEST")
 if [[ ${#REQUIRED_CUSTOM_SKILLS[@]} -eq 0 ]]; then
-  warn "No expected custom skills listed; skipping custom skill verification"
-  say "Verification passed"
-  exit 0
+  err "Snapshot skills manifest is empty: $CUSTOM_MANIFEST"
+  exit 1
 fi
 
 for skill in "${REQUIRED_CUSTOM_SKILLS[@]}"; do
@@ -253,6 +190,18 @@ if [[ -d "$AGENT_BASELINE_DIR" ]]; then
   while IFS= read -r line; do
     REPO_AGENT_SKILLS+=("$line")
   done < <(list_top_level_dirs "$AGENT_BASELINE_DIR")
+
+  overlap_count=0
+  for skill in "${REQUIRED_CUSTOM_SKILLS[@]}"; do
+    if array_contains "$skill" "${REPO_AGENT_SKILLS[@]}"; then
+      err "Skill hierarchy overlap detected (custom + shared): $skill"
+      overlap_count=$((overlap_count + 1))
+    fi
+  done
+  if [[ $overlap_count -gt 0 ]]; then
+    err "Invalid hierarchy: $overlap_count overlapping skill(s) between custom and shared agent profiles"
+    exit 1
+  fi
 
   for skill in "${REPO_AGENT_SKILLS[@]}"; do
     if [[ ! -f "$SKILLS_ROOT/$skill/SKILL.md" ]]; then

@@ -3,10 +3,10 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 source "$ROOT_DIR/scripts/os/common/platform.sh"
+source "$ROOT_DIR/scripts/os/common/layout.sh"
 
 SOURCE_CODEX_HOME="${CODEX_HOME:-$HOME/.codex}"
 SOURCE_PATH_SET=false
-EXPORT_FULL_HOME=false
 ALLOW_EMPTY_AGENTS=false
 ALLOW_EMPTY_SKILLS=false
 
@@ -21,10 +21,6 @@ while [[ $# -gt 0 ]]; do
       SOURCE_PATH_SET=true
       shift 2
       ;;
-    --with-full-home)
-      EXPORT_FULL_HOME=true
-      shift
-      ;;
     --allow-empty-agents)
       ALLOW_EMPTY_AGENTS=true
       shift
@@ -34,7 +30,7 @@ while [[ $# -gt 0 ]]; do
       shift
       ;;
     --help)
-      echo "Usage: scripts/export-from-local.sh [--source <path-to-codex-home>] [--with-full-home] [--allow-empty-agents] [--allow-empty-skills]"
+      echo "Usage: scripts/export-from-local.sh [--source <path-to-codex-home>] [--allow-empty-agents] [--allow-empty-skills]"
       exit 0
       ;;
     *)
@@ -58,23 +54,19 @@ SOURCE_GLOBAL_AGENTS="$SOURCE_CODEX_HOME/AGENTS.md"
 SOURCE_RULES="$SOURCE_CODEX_HOME/rules/default.rules"
 SOURCE_SKILLS_DIR="$SOURCE_CODEX_HOME/skills"
 
-DEST_CONFIG_TEMPLATE="$ROOT_DIR/codex/config/config.template.toml"
-DEST_GLOBAL_AGENTS="$ROOT_DIR/codex/agents/global.AGENTS.md"
-DEST_RULES="$ROOT_DIR/codex/rules/default.rules"
-DEST_RULES_TEMPLATE="$ROOT_DIR/codex/rules/default.rules.template"
-DEST_RULES_SOURCE_SNAPSHOT="$ROOT_DIR/codex/rules/default.rules.source.snapshot"
-DEST_CUSTOM_ARCHIVE_B64="$ROOT_DIR/codex/skills/custom-skills.tar.gz.b64"
-DEST_CUSTOM_ARCHIVE_SHA256="$ROOT_DIR/codex/skills/custom-skills.sha256"
-DEST_CUSTOM_MANIFEST="$ROOT_DIR/codex/skills/custom-skills.manifest.txt"
-DEST_PROJECT_TRUST_SNAPSHOT="$ROOT_DIR/codex/config/projects.trust.snapshot.toml"
-DEST_TOOLCHAIN_LOCK="$ROOT_DIR/codex/meta/toolchain.lock"
-RULES_RENDERER="$ROOT_DIR/scripts/render-portable-rules.sh"
+MACOS_PROFILE_ROOT="$(profile_runtime_root "macos")"
+COMMON_AGENT_SKILLS_DIR="$(common_agent_skills_root)"
 
-SOURCE_PLATFORM="$(platform_id)"
-DEST_OS_DIR="$ROOT_DIR/codex/os/$SOURCE_PLATFORM/snapshots/full-home"
-DEST_FULL_HOME_ARCHIVE_B64="$DEST_OS_DIR/archive.tar.gz.b64"
-DEST_FULL_HOME_ARCHIVE_SHA256="$DEST_OS_DIR/archive.sha256"
-DEST_FULL_HOME_MANIFEST="$DEST_OS_DIR/manifest.txt"
+DEST_CONFIG_TEMPLATE="$MACOS_PROFILE_ROOT/config/config.template.toml"
+DEST_GLOBAL_AGENTS="$MACOS_PROFILE_ROOT/agents/global.AGENTS.md"
+DEST_RULES="$MACOS_PROFILE_ROOT/rules/default.rules"
+DEST_RULES_TEMPLATE="$MACOS_PROFILE_ROOT/rules/default.rules.template"
+DEST_RULES_SOURCE_SNAPSHOT="$MACOS_PROFILE_ROOT/rules/default.rules.source.snapshot"
+DEST_CUSTOM_SKILLS_DIR="$MACOS_PROFILE_ROOT/skills/custom"
+DEST_CUSTOM_MANIFEST="$MACOS_PROFILE_ROOT/skills/manifests/custom-skills.manifest.txt"
+DEST_PROJECT_TRUST_SNAPSHOT="$MACOS_PROFILE_ROOT/config/projects.trust.snapshot.toml"
+DEST_TOOLCHAIN_LOCK="$MACOS_PROFILE_ROOT/meta/toolchain.lock"
+RULES_RENDERER="$ROOT_DIR/scripts/render-portable-rules.sh"
 
 TMP_DIR="$(mktemp -d)"
 cleanup() { rm -rf "$TMP_DIR"; }
@@ -92,9 +84,21 @@ require_tool() {
   fi
 }
 
-for tool in awk sed rsync tar base64; do
+for tool in awk sed rsync; do
   require_tool "$tool"
 done
+
+array_contains() {
+  local needle="$1"
+  shift
+  local item
+  for item in "$@"; do
+    if [[ "$item" == "$needle" ]]; then
+      return 0
+    fi
+  done
+  return 1
+}
 
 if [[ ! -x "$RULES_RENDERER" ]]; then
   err "Missing executable rules renderer: $RULES_RENDERER"
@@ -111,24 +115,22 @@ if [[ ! -d "$SOURCE_SKILLS_DIR" ]]; then
 fi
 
 mkdir -p \
-  "$ROOT_DIR/codex/agents" \
-  "$ROOT_DIR/codex/rules" \
-  "$ROOT_DIR/codex/skills" \
-  "$ROOT_DIR/codex/meta" \
-  "$DEST_OS_DIR"
+  "$MACOS_PROFILE_ROOT/agents" \
+  "$MACOS_PROFILE_ROOT/config" \
+  "$MACOS_PROFILE_ROOT/rules" \
+  "$MACOS_PROFILE_ROOT/skills" \
+  "$MACOS_PROFILE_ROOT/skills/custom" \
+  "$MACOS_PROFILE_ROOT/skills/manifests" \
+  "$MACOS_PROFILE_ROOT/meta" \
+  "$COMMON_AGENT_SKILLS_DIR"
 
 cp "$SOURCE_CONFIG" "$DEST_CONFIG_TEMPLATE"
 
-# Sanitize secrets for portable template.
-sed_inplace "$DEST_CONFIG_TEMPLATE" -E \
-  -e 's#^([[:space:]]*[A-Za-z0-9_-]*([Kk][Ee][Yy]|[Tt][Oo][Kk][Ee][Nn]|[Ss][Ee][Cc][Rr][Ee][Tt]|[Pp][Aa][Ss][Ss][Ww][Oo][Rr][Dd])[A-Za-z0-9_-]*[[:space:]]*=[[:space:]]*").*(".*)$#\1__REDACTED__\3#'
 sed_inplace "$DEST_CONFIG_TEMPLATE" \
-  -e 's|CONTEXT7_API_KEY = ".*"|CONTEXT7_API_KEY = "__CONTEXT7_API_KEY__"|g' \
-  -e 's|"x-context7-api-key"[[:space:]]*=[[:space:]]*".*"|"x-context7-api-key" = "__CONTEXT7_API_KEY__"|g' \
-  -e 's|Authorization = "Bearer .*"|Authorization = "Bearer __GITHUB_MCP_TOKEN__"|g' \
-  -e 's|"Authorization"[[:space:]]*=[[:space:]]*"Bearer .*"|"Authorization" = "Bearer __GITHUB_MCP_TOKEN__"|g'
+  -e 's|--api-key", "[^"]*"|--api-key", "__CONTEXT7_API_KEY__"|g' \
+  -e 's|Authorization = "Bearer [^"]*"|Authorization = "Bearer __GITHUB_MCP_TOKEN__"|g' \
+  -e 's|bearer_token_env_var = "[^"]*"|bearer_token_env_var = "GITHUB_MCP_TOKEN"|g'
 
-# Drop machine-specific project trust entries.
 awk '
   BEGIN { skip=0 }
   /^\[projects\./ { skip=1; next }
@@ -140,7 +142,6 @@ mv "$TMP_DIR/config.cleaned.toml" "$DEST_CONFIG_TEMPLATE"
 source_home="$(dirname "$SOURCE_CODEX_HOME")"
 escaped_source_home="$(printf '%s' "$source_home" | sed 's/[.[\\*^$()+?{|]/\\&/g')"
 
-# Preserve local trust entries separately for optional exact restore.
 awk '
   /^\[projects\./ { in_projects=1 }
   in_projects && /^\[/ && !/^\[projects\./ { in_projects=0 }
@@ -163,8 +164,6 @@ if [[ -f "$SOURCE_GLOBAL_AGENTS" ]]; then
       warn "Source global AGENTS is empty. Keeping empty snapshot due --allow-empty-agents."
     else
       err "Source global AGENTS is empty: $SOURCE_GLOBAL_AGENTS"
-      err "Refusing to overwrite codex/agents/global.AGENTS.md with empty content."
-      err "Use --allow-empty-agents only if this is intentional."
       exit 1
     fi
   fi
@@ -207,7 +206,7 @@ gh_version="$(gh --version 2>/dev/null | head -n1 | awk '{print $3}' || true)"
 os_name="$(uname -s 2>/dev/null || true)"
 arch_name="$(uname -m 2>/dev/null || true)"
 
-cat > "$DEST_TOOLCHAIN_LOCK" <<EOF
+cat > "$DEST_TOOLCHAIN_LOCK" <<EOF_LOCK
 # Generated by scripts/export-from-local.sh
 GENERATED_AT_UTC=$(utc_now_iso)
 OS_NAME=${os_name:-unknown}
@@ -219,11 +218,24 @@ PYTHON_VERSION=${python_version:-unknown}
 UV_VERSION=${uv_version:-unknown}
 UVX_VERSION=${uvx_version:-unknown}
 GH_VERSION=${gh_version:-unknown}
-EOF
+EOF_LOCK
 
-skills_to_pack=()
+mkdir -p "$DEST_CUSTOM_SKILLS_DIR"
+find "$DEST_CUSTOM_SKILLS_DIR" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
+
+shared_profile_names=()
+if [[ -d "$COMMON_AGENT_SKILLS_DIR" ]]; then
+  while IFS= read -r profile; do
+    shared_profile_names+=("$profile")
+  done < <(list_top_level_dirs "$COMMON_AGENT_SKILLS_DIR")
+fi
+
+skills_to_copy=()
 while IFS= read -r skill; do
-  skills_to_pack+=("$skill")
+  if array_contains "$skill" "${shared_profile_names[@]}"; then
+    continue
+  fi
+  skills_to_copy+=("$skill")
 done < <(
   find "$SOURCE_SKILLS_DIR" -mindepth 1 -maxdepth 1 -type d \
     | sed 's|.*/||' \
@@ -231,8 +243,7 @@ done < <(
     | sort
 )
 
-mkdir -p "$TMP_DIR/custom"
-if [[ ${#skills_to_pack[@]} -eq 0 ]]; then
+if [[ ${#skills_to_copy[@]} -eq 0 ]]; then
   if $ALLOW_EMPTY_SKILLS; then
     warn "No non-system skills found under $SOURCE_SKILLS_DIR (allowed by --allow-empty-skills)"
     cat > "$DEST_CUSTOM_MANIFEST" <<'MANIFEST'
@@ -240,58 +251,39 @@ if [[ ${#skills_to_pack[@]} -eq 0 ]]; then
 MANIFEST
   else
     err "No non-system skills found under $SOURCE_SKILLS_DIR"
-    err "Refusing to overwrite codex/skills snapshot with empty content."
-    err "Use --allow-empty-skills only if this is intentional."
     exit 1
   fi
 else
-  for skill in "${skills_to_pack[@]}"; do
+  for skill in "${skills_to_copy[@]}"; do
     if [[ ! -f "$SOURCE_SKILLS_DIR/$skill/SKILL.md" ]]; then
       err "Skill missing SKILL.md: $skill"
       exit 1
     fi
-    rsync -a --delete "$SOURCE_SKILLS_DIR/$skill" "$TMP_DIR/custom/"
+    rsync -a "$SOURCE_SKILLS_DIR/$skill/" "$DEST_CUSTOM_SKILLS_DIR/$skill/"
   done
-  printf '%s\n' "${skills_to_pack[@]}" > "$DEST_CUSTOM_MANIFEST"
+  printf '%s\n' "${skills_to_copy[@]}" > "$DEST_CUSTOM_MANIFEST"
 fi
 
-# Keep artifact compact.
-find "$TMP_DIR/custom" -type d -name '__pycache__' -prune -exec rm -rf {} +
-find "$TMP_DIR/custom" -type d -name '.git' -prune -exec rm -rf {} +
+agent_profiles_updated=0
+if [[ -d "$COMMON_AGENT_SKILLS_DIR" ]]; then
+  existing_agent_profiles=()
+  while IFS= read -r profile; do
+    existing_agent_profiles+=("$profile")
+  done < <(list_top_level_dirs "$COMMON_AGENT_SKILLS_DIR")
 
-if tar --help 2>/dev/null | grep -q -- '--sort'; then
-  COPYFILE_DISABLE=1 tar --sort=name --mtime='UTC 1970-01-01' --owner=0 --group=0 --numeric-owner -C "$TMP_DIR/custom" -czf "$TMP_DIR/custom-skills.tar.gz" .
-else
-  COPYFILE_DISABLE=1 tar -C "$TMP_DIR/custom" -czf "$TMP_DIR/custom-skills.tar.gz" .
-fi
-base64_encode_nolinewrap "$TMP_DIR/custom-skills.tar.gz" > "$DEST_CUSTOM_ARCHIVE_B64"
-sha256_file "$TMP_DIR/custom-skills.tar.gz" > "$DEST_CUSTOM_ARCHIVE_SHA256"
-
-if $EXPORT_FULL_HOME; then
-  full_archive="$TMP_DIR/full-codex-home.tar.gz"
-  if tar --help 2>/dev/null | grep -q -- '--sort'; then
-    COPYFILE_DISABLE=1 tar --sort=name --mtime='UTC 1970-01-01' --owner=0 --group=0 --numeric-owner -C "$SOURCE_CODEX_HOME" -czf "$full_archive" .
-  else
-    COPYFILE_DISABLE=1 tar -C "$SOURCE_CODEX_HOME" -czf "$full_archive" .
-  fi
-
-  base64_encode_nolinewrap "$full_archive" > "$DEST_FULL_HOME_ARCHIVE_B64"
-  sha256_file "$full_archive" > "$DEST_FULL_HOME_ARCHIVE_SHA256"
-
-  find "$SOURCE_CODEX_HOME" -mindepth 1 \
-    | awk -v prefix="$SOURCE_CODEX_HOME/" '{ sub("^" prefix, "", $0); print $0 }' \
-    | sort > "$DEST_FULL_HOME_MANIFEST"
-
-  say "Updated full snapshot: $DEST_FULL_HOME_ARCHIVE_B64"
-  say "Updated full snapshot checksum: $DEST_FULL_HOME_ARCHIVE_SHA256"
-  say "Updated full snapshot manifest: $DEST_FULL_HOME_MANIFEST"
+  for profile in "${existing_agent_profiles[@]}"; do
+    if [[ -f "$SOURCE_SKILLS_DIR/$profile/SKILL.md" ]]; then
+      rsync -a "$SOURCE_SKILLS_DIR/$profile/" "$COMMON_AGENT_SKILLS_DIR/$profile/"
+      agent_profiles_updated=$((agent_profiles_updated + 1))
+    fi
+  done
 fi
 
 say "Export complete"
+say "Target profile updated: macos"
 say "Updated: $DEST_CONFIG_TEMPLATE"
 say "Updated: $DEST_PROJECT_TRUST_SNAPSHOT"
 say "Updated: $DEST_TOOLCHAIN_LOCK"
 say "Updated: $DEST_CUSTOM_MANIFEST"
-say "Updated: $DEST_CUSTOM_ARCHIVE_B64"
-say "Updated: $DEST_CUSTOM_ARCHIVE_SHA256"
-say "Packed skills: ${#skills_to_pack[@]}"
+say "Copied skills: ${#skills_to_copy[@]}"
+say "Shared agent profiles synced: $agent_profiles_updated"

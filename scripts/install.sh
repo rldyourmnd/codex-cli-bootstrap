@@ -3,34 +3,16 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 source "$ROOT_DIR/scripts/os/common/platform.sh"
+source "$ROOT_DIR/scripts/os/common/layout.sh"
 
 CODEX_HOME_DIR="${CODEX_HOME:-$HOME/.codex}"
-TEMPLATE_CONFIG="$ROOT_DIR/codex/config/config.template.toml"
 TARGET_CONFIG="$CODEX_HOME_DIR/config.toml"
 TARGET_GLOBAL_AGENTS="$CODEX_HOME_DIR/AGENTS.md"
 TARGET_RULES_DIR="$CODEX_HOME_DIR/rules"
 TARGET_RULES_FILE="$TARGET_RULES_DIR/default.rules"
 TARGET_SKILLS_DIR="$CODEX_HOME_DIR/skills"
-RULES_MODE_FILE="$CODEX_HOME_DIR/.better-codex-rules-mode"
-
-GLOBAL_AGENTS_SRC="$ROOT_DIR/codex/agents/global.AGENTS.md"
-RULES_PORTABLE_SRC="$ROOT_DIR/codex/rules/default.rules"
-RULES_SOURCE_SNAPSHOT="$ROOT_DIR/codex/rules/default.rules.source.snapshot"
-RULES_TEMPLATE_SRC="$ROOT_DIR/codex/rules/default.rules.template"
-PROJECT_TRUST_SNAPSHOT="$ROOT_DIR/codex/config/projects.trust.snapshot.toml"
-CUSTOM_SKILLS_SRC="$ROOT_DIR/codex/skills/custom"
-CUSTOM_SKILLS_ARCHIVE_B64="$ROOT_DIR/codex/skills/custom-skills.tar.gz.b64"
-CUSTOM_SKILLS_SHA256="$ROOT_DIR/codex/skills/custom-skills.sha256"
-CUSTOM_SKILLS_MANIFEST="$ROOT_DIR/codex/skills/custom-skills.manifest.txt"
-CURATED_MANIFEST="$ROOT_DIR/codex/skills/curated-manifest.txt"
-AGENT_SKILLS_SRC="$ROOT_DIR/skills/codex-agents"
+RULES_MODE_FILE="$CODEX_HOME_DIR/.codex-cli-bootstrap-rules-mode"
 SKILL_INSTALLER="$CODEX_HOME_DIR/skills/.system/skill-installer/scripts/install-skill-from-github.py"
-PLATFORM_ID="$(platform_id)"
-OS_SNAPSHOT_DIR="$ROOT_DIR/codex/os/$PLATFORM_ID/snapshots/full-home"
-FULL_HOME_ARCHIVE_B64="$OS_SNAPSHOT_DIR/archive.tar.gz.b64"
-FULL_HOME_SHA256="$OS_SNAPSHOT_DIR/archive.sha256"
-FULL_HOME_MANIFEST="$OS_SNAPSHOT_DIR/manifest.txt"
-LEGACY_OS_SNAPSHOT_DIR="$ROOT_DIR/codex/os/$PLATFORM_ID"
 
 FORCE=false
 DRY_RUN=false
@@ -38,7 +20,6 @@ SKIP_CURATED=false
 CLEAN_SKILLS=false
 RULES_MODE="exact"
 APPLY_PROJECT_TRUST=true
-RESTORE_FULL_HOME=false
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -70,13 +51,9 @@ while [[ $# -gt 0 ]]; do
       APPLY_PROJECT_TRUST=false
       shift
       ;;
-    --restore-full-home)
-      RESTORE_FULL_HOME=true
-      shift
-      ;;
     *)
       echo "[ERROR] Unknown argument: $1"
-      echo "Usage: scripts/install.sh [--force] [--dry-run] [--skip-curated] [--clean-skills] [--rules-mode portable|exact] [--skip-project-trust] [--restore-full-home]"
+      echo "Usage: scripts/install.sh [--force] [--dry-run] [--skip-curated] [--clean-skills] [--rules-mode portable|exact] [--skip-project-trust]"
       exit 1
       ;;
   esac
@@ -91,6 +68,21 @@ if [[ "$RULES_MODE" != "portable" && "$RULES_MODE" != "exact" ]]; then
   exit 1
 fi
 
+REQUESTED_PROFILE="$(detect_profile_os)"
+PROFILE_OS="$(resolve_profile_os "$REQUESTED_PROFILE")"
+PROFILE_ROOT="$(resolve_runtime_root "$REQUESTED_PROFILE")"
+
+TEMPLATE_CONFIG="$PROFILE_ROOT/config/config.template.toml"
+GLOBAL_AGENTS_SRC="$PROFILE_ROOT/agents/global.AGENTS.md"
+RULES_PORTABLE_SRC="$PROFILE_ROOT/rules/default.rules"
+RULES_SOURCE_SNAPSHOT="$PROFILE_ROOT/rules/default.rules.source.snapshot"
+RULES_TEMPLATE_SRC="$PROFILE_ROOT/rules/default.rules.template"
+PROJECT_TRUST_SNAPSHOT="$PROFILE_ROOT/config/projects.trust.snapshot.toml"
+CUSTOM_SKILLS_DIR="$PROFILE_ROOT/skills/custom"
+CUSTOM_SKILLS_MANIFEST="$PROFILE_ROOT/skills/manifests/custom-skills.manifest.txt"
+CURATED_MANIFEST="$PROFILE_ROOT/skills/manifests/curated-manifest.txt"
+AGENT_SKILLS_SRC="$(common_agent_skills_root)"
+
 run() {
   if $DRY_RUN; then
     printf "[DRY-RUN]"
@@ -101,17 +93,17 @@ run() {
   fi
 }
 
-is_nonempty_text_file() {
-  local file="$1"
-  [[ -f "$file" ]] && grep -q '[^[:space:]]' "$file"
-}
-
 require_tool() {
   local tool="$1"
   if ! command -v "$tool" >/dev/null 2>&1; then
     err "Missing required tool: $tool"
     exit 1
   fi
+}
+
+is_nonempty_text_file() {
+  local file="$1"
+  [[ -f "$file" ]] && grep -q '[^[:space:]]' "$file"
 }
 
 backup_if_exists() {
@@ -123,102 +115,70 @@ backup_if_exists() {
   fi
 }
 
-for tool in sed tar base64 rsync; do
-  require_tool "$tool"
-done
+array_contains() {
+  local needle="$1"
+  shift
+  local item
+  for item in "$@"; do
+    if [[ "$item" == "$needle" ]]; then
+      return 0
+    fi
+  done
+  return 1
+}
 
-if ! command -v codex >/dev/null 2>&1; then
-  warn "codex CLI not found in PATH. Run platform installer under scripts/os/$PLATFORM_ID/install/"
-fi
+install_skill_dir() {
+  local src_root="$1"
+  local skill="$2"
+  local src="$src_root/$skill"
+  local dst="$TARGET_SKILLS_DIR/$skill"
 
-mkdir -p "$CODEX_HOME_DIR" "$TARGET_RULES_DIR" "$TARGET_SKILLS_DIR"
-
-if [[ ! -f "$FULL_HOME_ARCHIVE_B64" ]]; then
-  legacy_archive="$LEGACY_OS_SNAPSHOT_DIR/full-codex-home.tar.gz.b64"
-  legacy_sha="$LEGACY_OS_SNAPSHOT_DIR/full-codex-home.sha256"
-  legacy_manifest="$LEGACY_OS_SNAPSHOT_DIR/full-codex-home.manifest.txt"
-  if [[ -f "$legacy_archive" ]]; then
-    warn "Using legacy full-home snapshot path: $legacy_archive"
-    FULL_HOME_ARCHIVE_B64="$legacy_archive"
-    FULL_HOME_SHA256="$legacy_sha"
-    FULL_HOME_MANIFEST="$legacy_manifest"
-  fi
-fi
-
-if $RESTORE_FULL_HOME; then
-  if [[ ! -f "$FULL_HOME_ARCHIVE_B64" ]]; then
-    err "Full snapshot not found for platform '$PLATFORM_ID': $FULL_HOME_ARCHIVE_B64"
-    err "Create it on source machine via: scripts/export-from-local.sh --with-full-home"
+  if [[ ! -f "$src/SKILL.md" ]]; then
+    err "Skill missing SKILL.md: $src"
     exit 1
   fi
 
-  codex_home_has_content=false
-  if [[ -d "$CODEX_HOME_DIR" ]] && find "$CODEX_HOME_DIR" -mindepth 1 -maxdepth 1 -print -quit | grep -q .; then
-    codex_home_has_content=true
-  fi
-
-  if $codex_home_has_content && ! $FORCE; then
-    err "$CODEX_HOME_DIR is not empty. Re-run with --force to replace it."
-    exit 1
+  if [[ -d "$dst" && ! $FORCE ]]; then
+    warn "Skill exists, skipping (use --force to overwrite): $skill"
+    return
   fi
 
   if $DRY_RUN; then
-    echo "[DRY-RUN] restore full codex home from '$FULL_HOME_ARCHIVE_B64' into '$CODEX_HOME_DIR'"
-    if [[ -f "$FULL_HOME_SHA256" ]]; then
-      echo "[DRY-RUN] verify checksum from '$FULL_HOME_SHA256'"
-    fi
-    if [[ -f "$FULL_HOME_MANIFEST" ]]; then
-      echo "[DRY-RUN] validate files against '$FULL_HOME_MANIFEST'"
-    fi
-    say "Dry-run full-home restore complete"
-    exit 0
+    echo "[DRY-RUN] rm -rf '$dst'"
+    echo "[DRY-RUN] rsync -a '$src/' '$dst/'"
+  else
+    rm -rf "$dst"
+    rsync -a "$src/" "$dst/"
   fi
+  say "Installed skill: $skill"
+}
 
-  if $codex_home_has_content; then
-    backup_dir="${CODEX_HOME_DIR}.bak.$(date +%Y%m%d_%H%M%S)"
-    cp -R "$CODEX_HOME_DIR" "$backup_dir"
-    say "Backed up existing codex home to $backup_dir"
-    find "$CODEX_HOME_DIR" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
-  fi
+for tool in sed rsync awk; do
+  require_tool "$tool"
+done
 
-  tmp_full_archive="$(mktemp_with_suffix .tar.gz)"
-  base64_decode_file "$FULL_HOME_ARCHIVE_B64" "$tmp_full_archive"
-
-  if [[ -f "$FULL_HOME_SHA256" ]]; then
-    expected_sha="$(cat "$FULL_HOME_SHA256")"
-    actual_sha="$(sha256_file "$tmp_full_archive")"
-    if [[ "$actual_sha" != "$expected_sha" ]]; then
-      rm -f "$tmp_full_archive"
-      err "Full snapshot checksum verification failed"
-      exit 1
-    fi
-  fi
-
-  tar -xzf "$tmp_full_archive" -C "$CODEX_HOME_DIR"
-  rm -f "$tmp_full_archive"
-
-  if [[ -f "$FULL_HOME_MANIFEST" ]]; then
-    missing=0
-    while IFS= read -r relpath; do
-      if [[ ! -e "$CODEX_HOME_DIR/$relpath" ]]; then
-        warn "Missing restored entry: $relpath"
-        missing=$((missing + 1))
-      fi
-    done < <(read_nonempty_lines "$FULL_HOME_MANIFEST")
-    if [[ $missing -gt 0 ]]; then
-      err "Full restore finished with $missing missing entries"
-      exit 1
-    fi
-  fi
-
-  say "Full codex home restored for platform '$PLATFORM_ID'"
-  exit 0
+if [[ "$REQUESTED_PROFILE" != "$PROFILE_OS" ]]; then
+  warn "Profile '$REQUESTED_PROFILE' has no payload, using '$PROFILE_OS'"
 fi
 
 if [[ ! -f "$TEMPLATE_CONFIG" ]]; then
   err "Missing template config: $TEMPLATE_CONFIG"
   exit 1
 fi
+if [[ ! -f "$GLOBAL_AGENTS_SRC" ]]; then
+  err "Missing global AGENTS source: $GLOBAL_AGENTS_SRC"
+  exit 1
+fi
+if [[ ! -d "$CUSTOM_SKILLS_DIR" ]]; then
+  err "Missing custom skills dir: $CUSTOM_SKILLS_DIR"
+  exit 1
+fi
+if [[ ! -f "$CUSTOM_SKILLS_MANIFEST" ]]; then
+  err "Missing custom skills manifest: $CUSTOM_SKILLS_MANIFEST"
+  exit 1
+fi
+
+mkdir -p "$CODEX_HOME_DIR" "$TARGET_RULES_DIR" "$TARGET_SKILLS_DIR"
 
 if [[ -f "$TARGET_CONFIG" ]]; then
   if ! $FORCE; then
@@ -232,10 +192,10 @@ CONTEXT7_API_KEY_VALUE="${CONTEXT7_API_KEY:-}"
 GITHUB_MCP_TOKEN_VALUE="${GITHUB_MCP_TOKEN:-}"
 
 if [[ -z "$CONTEXT7_API_KEY_VALUE" ]]; then
-  warn "CONTEXT7_API_KEY is empty. Context7 MCP auth may fail."
+  warn "CONTEXT7_API_KEY is empty. Context7 MCP may not authenticate."
 fi
 if [[ -z "$GITHUB_MCP_TOKEN_VALUE" ]]; then
-  warn "GITHUB_MCP_TOKEN is empty. GitHub MCP auth may fail."
+  warn "GITHUB_MCP_TOKEN is empty. GitHub MCP may not authenticate."
 fi
 
 TMP_CONFIG="$(mktemp)"
@@ -277,27 +237,19 @@ else
   say "Skipping project trust snapshot (requested)"
 fi
 
-if [[ -f "$GLOBAL_AGENTS_SRC" ]]; then
-  if ! is_nonempty_text_file "$GLOBAL_AGENTS_SRC"; then
-    err "Global AGENTS source is empty: $GLOBAL_AGENTS_SRC"
-    err "Refusing to install empty AGENTS.md"
-    exit 1
-  fi
-  if [[ -f "$TARGET_GLOBAL_AGENTS" && ! $FORCE ]]; then
-    warn "$TARGET_GLOBAL_AGENTS exists; skipping (use --force to overwrite)."
-  else
-    if [[ -f "$TARGET_GLOBAL_AGENTS" ]]; then
-      backup_if_exists "$TARGET_GLOBAL_AGENTS"
-    fi
-    run cp "$GLOBAL_AGENTS_SRC" "$TARGET_GLOBAL_AGENTS"
-    say "Installed global AGENTS to $TARGET_GLOBAL_AGENTS"
-    if ! is_nonempty_text_file "$TARGET_GLOBAL_AGENTS"; then
-      err "Installed AGENTS is empty: $TARGET_GLOBAL_AGENTS"
-      exit 1
-    fi
-  fi
+if ! is_nonempty_text_file "$GLOBAL_AGENTS_SRC"; then
+  err "Global AGENTS source is empty: $GLOBAL_AGENTS_SRC"
+  exit 1
+fi
+
+if [[ -f "$TARGET_GLOBAL_AGENTS" && ! $FORCE ]]; then
+  warn "$TARGET_GLOBAL_AGENTS exists; skipping (use --force to overwrite)."
 else
-  warn "Global AGENTS source not found: $GLOBAL_AGENTS_SRC"
+  if [[ -f "$TARGET_GLOBAL_AGENTS" ]]; then
+    backup_if_exists "$TARGET_GLOBAL_AGENTS"
+  fi
+  run cp "$GLOBAL_AGENTS_SRC" "$TARGET_GLOBAL_AGENTS"
+  say "Installed global AGENTS to $TARGET_GLOBAL_AGENTS"
 fi
 
 rules_source=""
@@ -315,6 +267,7 @@ if [[ -n "$rules_source" ]]; then
   cp "$rules_source" "$TMP_RULES"
   escaped_home="$(printf '%s' "$HOME" | sed 's/[.[\\*^$()+?{|]/\\&/g')"
   sed_inplace "$TMP_RULES" -e "s|__HOME__|$escaped_home|g"
+
   if [[ -f "$TARGET_RULES_FILE" ]]; then
     if $FORCE; then
       backup_if_exists "$TARGET_RULES_FILE"
@@ -324,7 +277,8 @@ if [[ -n "$rules_source" ]]; then
       TMP_RULES=""
     fi
   fi
-  if [[ -n "${TMP_RULES:-}" ]]; then
+
+  if [[ -n "$TMP_RULES" ]]; then
     run cp "$TMP_RULES" "$TARGET_RULES_FILE"
     rm -f "$TMP_RULES"
     say "Installed $RULES_MODE rules to $TARGET_RULES_FILE"
@@ -351,102 +305,55 @@ if $CLEAN_SKILLS; then
   say "Cleaned existing non-system skills"
 fi
 
-baseline_skills=()
+shared_skills=()
 if [[ -d "$AGENT_SKILLS_SRC" ]]; then
   while IFS= read -r line; do
-    baseline_skills+=("$line")
+    shared_skills+=("$line")
   done < <(list_top_level_dirs "$AGENT_SKILLS_SRC")
 
-  if [[ ${#baseline_skills[@]} -eq 0 ]]; then
-    warn "No repository agent skills found in $AGENT_SKILLS_SRC"
-  else
-    for skill in "${baseline_skills[@]}"; do
-      if [[ ! -f "$AGENT_SKILLS_SRC/$skill/SKILL.md" ]]; then
-        err "Repository agent skill missing SKILL.md: $AGENT_SKILLS_SRC/$skill"
-        exit 1
-      fi
-      run rsync -a "$AGENT_SKILLS_SRC/$skill/" "$TARGET_SKILLS_DIR/$skill/"
-    done
-    say "Installed repository agent baseline skills (${#baseline_skills[@]})"
-  fi
-else
-  warn "Repository agent skills directory not found: $AGENT_SKILLS_SRC"
-fi
-
-if [[ -f "$CUSTOM_SKILLS_ARCHIVE_B64" ]]; then
-  TMP_ARCHIVE="$(mktemp_with_suffix .tar.gz)"
-  TMP_EXTRACT_DIR="$(mktemp -d)"
-
-  if $DRY_RUN; then
-    echo "[DRY-RUN] decode base64 '$CUSTOM_SKILLS_ARCHIVE_B64' -> '$TMP_ARCHIVE'"
-    if [[ -f "$CUSTOM_SKILLS_SHA256" ]]; then
-      echo "[DRY-RUN] verify sha256 from '$CUSTOM_SKILLS_SHA256'"
-    fi
-    echo "[DRY-RUN] tar -xzf '$TMP_ARCHIVE' -C '$TMP_EXTRACT_DIR'"
-    echo "[DRY-RUN] rsync extracted skills to '$TARGET_SKILLS_DIR/'"
-  else
-    base64_decode_file "$CUSTOM_SKILLS_ARCHIVE_B64" "$TMP_ARCHIVE"
-    if [[ -f "$CUSTOM_SKILLS_SHA256" ]]; then
-      expected_sha="$(cat "$CUSTOM_SKILLS_SHA256")"
-      actual_sha="$(sha256_file "$TMP_ARCHIVE")"
-      if [[ "$actual_sha" != "$expected_sha" ]]; then
-        err "Custom skills archive checksum verification failed"
-        rm -f "$TMP_ARCHIVE"
-        rm -rf "$TMP_EXTRACT_DIR"
-        exit 1
-      fi
-    fi
-    tar -xzf "$TMP_ARCHIVE" -C "$TMP_EXTRACT_DIR"
-    find "$TMP_EXTRACT_DIR" -type f -name '._*' -delete
-    if [[ -d "$TMP_EXTRACT_DIR/custom" ]]; then
-      rsync -a "$TMP_EXTRACT_DIR/custom/" "$TARGET_SKILLS_DIR/"
-    else
-      rsync -a "$TMP_EXTRACT_DIR/" "$TARGET_SKILLS_DIR/"
-    fi
-  fi
-
-  rm -f "$TMP_ARCHIVE"
-  rm -rf "$TMP_EXTRACT_DIR"
-  say "Custom skills archive extracted to $TARGET_SKILLS_DIR"
-elif [[ -d "$CUSTOM_SKILLS_SRC" ]]; then
-  run rsync -a "$CUSTOM_SKILLS_SRC/" "$TARGET_SKILLS_DIR/"
-  say "Custom skills synced to $TARGET_SKILLS_DIR"
-else
-  warn "No custom skills source found in repository"
-fi
-
-if [[ ${#baseline_skills[@]} -gt 0 ]] && ([[ -f "$CUSTOM_SKILLS_ARCHIVE_B64" ]] || [[ -d "$CUSTOM_SKILLS_SRC" ]]); then
-  for skill in "${baseline_skills[@]}"; do
-    run rsync -a "$AGENT_SKILLS_SRC/$skill/" "$TARGET_SKILLS_DIR/$skill/"
+  for skill in "${shared_skills[@]}"; do
+    install_skill_dir "$AGENT_SKILLS_SRC" "$skill"
   done
-  say "Re-applied repository agent baseline skills after custom skill sync (${#baseline_skills[@]})"
+  say "Installed shared agent profiles: ${#shared_skills[@]}"
+else
+  warn "Shared agent profile directory not found: $AGENT_SKILLS_SRC"
 fi
 
-if [[ -f "$CUSTOM_SKILLS_MANIFEST" ]]; then
-  expected_custom=()
-  while IFS= read -r line; do
-    expected_custom+=("$line")
-  done < <(read_nonempty_lines "$CUSTOM_SKILLS_MANIFEST")
-  if [[ ${#expected_custom[@]} -eq 0 ]]; then
-    err "Snapshot manifest has no skills: $CUSTOM_SKILLS_MANIFEST"
-    err "Run scripts/export-from-local.sh on source machine to rebuild snapshot."
-    exit 1
-  fi
+custom_skills=()
+while IFS= read -r line; do
+  custom_skills+=("$line")
+done < <(read_nonempty_lines "$CUSTOM_SKILLS_MANIFEST")
 
-  missing_custom=0
-  for skill in "${expected_custom[@]}"; do
-    if [[ ! -f "$TARGET_SKILLS_DIR/$skill/SKILL.md" ]]; then
-      warn "Expected skill not found after install: $skill"
-      missing_custom=$((missing_custom + 1))
-    fi
-  done
-  if [[ $missing_custom -eq 0 ]]; then
-    say "Installed all skills from snapshot manifest (${#expected_custom[@]})"
-  else
-    err "Missing $missing_custom skill(s) from snapshot manifest"
-    exit 1
-  fi
+if [[ ${#custom_skills[@]} -eq 0 ]]; then
+  err "No custom skills listed in manifest: $CUSTOM_SKILLS_MANIFEST"
+  exit 1
 fi
+
+missing_custom=0
+installed_custom=0
+overlap_skipped=0
+for skill in "${custom_skills[@]}"; do
+  if array_contains "$skill" "${shared_skills[@]}"; then
+    warn "Skipping custom skill overlapping with shared agent profile: $skill"
+    overlap_skipped=$((overlap_skipped + 1))
+    continue
+  fi
+  if [[ ! -f "$CUSTOM_SKILLS_DIR/$skill/SKILL.md" ]]; then
+    err "Manifest skill missing from snapshot: $skill"
+    missing_custom=$((missing_custom + 1))
+    continue
+  fi
+  install_skill_dir "$CUSTOM_SKILLS_DIR" "$skill"
+  installed_custom=$((installed_custom + 1))
+done
+if [[ $missing_custom -gt 0 ]]; then
+  err "Missing $missing_custom skill(s) from snapshot manifest"
+  exit 1
+fi
+if [[ $overlap_skipped -gt 0 ]]; then
+  warn "Skipped overlapping custom skills: $overlap_skipped"
+fi
+say "Installed custom skills from manifest: $installed_custom"
 
 if ! $SKIP_CURATED; then
   if [[ -f "$SKILL_INSTALLER" && -f "$CURATED_MANIFEST" ]]; then
@@ -454,21 +361,26 @@ if ! $SKIP_CURATED; then
     while IFS= read -r line; do
       curated_paths+=("$line")
     done < <(read_nonempty_lines "$CURATED_MANIFEST")
+
     if [[ ${#curated_paths[@]} -gt 0 ]]; then
-      if $DRY_RUN; then
+      if ! command -v python3 >/dev/null 2>&1; then
+        warn "python3 not found; skipping curated skill install"
+      elif $DRY_RUN; then
         echo "[DRY-RUN] python3 '$SKILL_INSTALLER' --repo openai/skills --path ${curated_paths[*]}"
       else
-        python3 "$SKILL_INSTALLER" --repo openai/skills --path "${curated_paths[@]}"
+        python3 "$SKILL_INSTALLER" --repo openai/skills --path "${curated_paths[@]}" || warn "Curated skills install returned non-zero status"
+        say "Curated skills install attempted from openai/skills"
       fi
-      say "Curated skills install attempted from openai/skills"
     fi
   else
     warn "Skill installer or curated manifest not found. Skipping curated skills install."
   fi
+else
+  say "Skipping curated skills (requested)"
 fi
 
 if command -v codex >/dev/null 2>&1 && ! $DRY_RUN; then
   codex mcp list >/dev/null || warn "Unable to query MCP list after install"
 fi
 
-say "Install complete"
+say "Install complete (profile: $PROFILE_OS)"

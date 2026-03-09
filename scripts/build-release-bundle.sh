@@ -47,13 +47,14 @@ require_tool() {
 for tool in tar awk find sort; do
   require_tool "$tool"
 done
+require_tool git
 
 if [[ -z "$VERSION" ]]; then
   VERSION="$(git describe --tags --always 2>/dev/null || date -u +%Y%m%d%H%M%S)"
 fi
 
 mkdir -p "$OUTPUT_DIR"
-bundle_name="better-codex-${VERSION}"
+bundle_name="codex-cli-bootstrap-${VERSION}"
 bundle_path="$OUTPUT_DIR/${bundle_name}.tar.gz"
 checksum_path="$OUTPUT_DIR/${bundle_name}.sha256"
 manifest_path="$OUTPUT_DIR/${bundle_name}.manifest.txt"
@@ -61,10 +62,10 @@ manifest_path="$OUTPUT_DIR/${bundle_name}.manifest.txt"
 tmpdir="$(mktemp -d)"
 trap 'rm -rf "$tmpdir"' EXIT
 
-find "$ROOT_DIR" -mindepth 1 -maxdepth 1 \
-  ! -name '.git' \
-  ! -name 'dist' \
-  -exec cp -R {} "$tmpdir/" \;
+while IFS= read -r -d '' path; do
+  mkdir -p "$tmpdir/$(dirname "$path")"
+  cp -p "$ROOT_DIR/$path" "$tmpdir/$path"
+done < <(git -C "$ROOT_DIR" ls-files -z)
 
 if tar --help 2>/dev/null | grep -q -- '--sort'; then
   COPYFILE_DISABLE=1 tar --sort=name --mtime='UTC 1970-01-01' --owner=0 --group=0 --numeric-owner -C "$tmpdir" -czf "$bundle_path" .
