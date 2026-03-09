@@ -9,6 +9,8 @@ SOURCE_CODEX_HOME="${CODEX_HOME:-$HOME/.codex}"
 SOURCE_PATH_SET=false
 ALLOW_EMPTY_AGENTS=false
 ALLOW_EMPTY_SKILLS=false
+SOURCE_PROFILE="$(platform_id)"
+TARGET_PROFILE="$SOURCE_PROFILE"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -21,6 +23,14 @@ while [[ $# -gt 0 ]]; do
       SOURCE_PATH_SET=true
       shift 2
       ;;
+    --profile)
+      if [[ $# -lt 2 ]]; then
+        echo "[ERROR] --profile requires a value: linux|macos|windows"
+        exit 1
+      fi
+      TARGET_PROFILE="$2"
+      shift 2
+      ;;
     --allow-empty-agents)
       ALLOW_EMPTY_AGENTS=true
       shift
@@ -30,7 +40,7 @@ while [[ $# -gt 0 ]]; do
       shift
       ;;
     --help)
-      echo "Usage: scripts/export-from-local.sh [--source <path-to-codex-home>] [--allow-empty-agents] [--allow-empty-skills]"
+      echo "Usage: scripts/export-from-local.sh [--source <path-to-codex-home>] [--profile linux|macos|windows] [--allow-empty-agents] [--allow-empty-skills]"
       exit 0
       ;;
     *)
@@ -54,18 +64,32 @@ SOURCE_GLOBAL_AGENTS="$SOURCE_CODEX_HOME/AGENTS.md"
 SOURCE_RULES="$SOURCE_CODEX_HOME/rules/default.rules"
 SOURCE_SKILLS_DIR="$SOURCE_CODEX_HOME/skills"
 
-MACOS_PROFILE_ROOT="$(profile_runtime_root "macos")"
+if ! is_supported_profile_os "$SOURCE_PROFILE"; then
+  echo "[ERROR] Unsupported source platform for export: $SOURCE_PROFILE"
+  exit 1
+fi
+if ! is_supported_profile_os "$TARGET_PROFILE"; then
+  echo "[ERROR] Invalid export target profile: $TARGET_PROFILE"
+  exit 1
+fi
+if [[ "$TARGET_PROFILE" != "$SOURCE_PROFILE" ]]; then
+  echo "[ERROR] Refusing cross-profile export from '$SOURCE_PROFILE' into '$TARGET_PROFILE'"
+  echo "[ERROR] Run this command on a machine matching the target profile or use --profile $SOURCE_PROFILE"
+  exit 1
+fi
+
+TARGET_PROFILE_ROOT="$(profile_runtime_root "$TARGET_PROFILE")"
 COMMON_AGENT_SKILLS_DIR="$(common_agent_skills_root)"
 
-DEST_CONFIG_TEMPLATE="$MACOS_PROFILE_ROOT/config/config.template.toml"
-DEST_GLOBAL_AGENTS="$MACOS_PROFILE_ROOT/agents/global.AGENTS.md"
-DEST_RULES="$MACOS_PROFILE_ROOT/rules/default.rules"
-DEST_RULES_TEMPLATE="$MACOS_PROFILE_ROOT/rules/default.rules.template"
-DEST_RULES_SOURCE_SNAPSHOT="$MACOS_PROFILE_ROOT/rules/default.rules.source.snapshot"
-DEST_CUSTOM_SKILLS_DIR="$MACOS_PROFILE_ROOT/skills/custom"
-DEST_CUSTOM_MANIFEST="$MACOS_PROFILE_ROOT/skills/manifests/custom-skills.manifest.txt"
-DEST_PROJECT_TRUST_SNAPSHOT="$MACOS_PROFILE_ROOT/config/projects.trust.snapshot.toml"
-DEST_TOOLCHAIN_LOCK="$MACOS_PROFILE_ROOT/meta/toolchain.lock"
+DEST_CONFIG_TEMPLATE="$TARGET_PROFILE_ROOT/config/config.template.toml"
+DEST_GLOBAL_AGENTS="$TARGET_PROFILE_ROOT/agents/global.AGENTS.md"
+DEST_RULES="$TARGET_PROFILE_ROOT/rules/default.rules"
+DEST_RULES_TEMPLATE="$TARGET_PROFILE_ROOT/rules/default.rules.template"
+DEST_RULES_SOURCE_SNAPSHOT="$TARGET_PROFILE_ROOT/rules/default.rules.source.snapshot"
+DEST_CUSTOM_SKILLS_DIR="$TARGET_PROFILE_ROOT/skills/custom"
+DEST_CUSTOM_MANIFEST="$TARGET_PROFILE_ROOT/skills/manifests/custom-skills.manifest.txt"
+DEST_PROJECT_TRUST_SNAPSHOT="$TARGET_PROFILE_ROOT/config/projects.trust.snapshot.toml"
+DEST_TOOLCHAIN_LOCK="$TARGET_PROFILE_ROOT/meta/toolchain.lock"
 RULES_RENDERER="$ROOT_DIR/scripts/render-portable-rules.sh"
 
 TMP_DIR="$(mktemp -d)"
@@ -115,13 +139,13 @@ if [[ ! -d "$SOURCE_SKILLS_DIR" ]]; then
 fi
 
 mkdir -p \
-  "$MACOS_PROFILE_ROOT/agents" \
-  "$MACOS_PROFILE_ROOT/config" \
-  "$MACOS_PROFILE_ROOT/rules" \
-  "$MACOS_PROFILE_ROOT/skills" \
-  "$MACOS_PROFILE_ROOT/skills/custom" \
-  "$MACOS_PROFILE_ROOT/skills/manifests" \
-  "$MACOS_PROFILE_ROOT/meta" \
+  "$TARGET_PROFILE_ROOT/agents" \
+  "$TARGET_PROFILE_ROOT/config" \
+  "$TARGET_PROFILE_ROOT/rules" \
+  "$TARGET_PROFILE_ROOT/skills" \
+  "$TARGET_PROFILE_ROOT/skills/custom" \
+  "$TARGET_PROFILE_ROOT/skills/manifests" \
+  "$TARGET_PROFILE_ROOT/meta" \
   "$COMMON_AGENT_SKILLS_DIR"
 
 cp "$SOURCE_CONFIG" "$DEST_CONFIG_TEMPLATE"
@@ -280,7 +304,7 @@ if [[ -d "$COMMON_AGENT_SKILLS_DIR" ]]; then
 fi
 
 say "Export complete"
-say "Target profile updated: macos"
+say "Target profile updated: $TARGET_PROFILE"
 say "Updated: $DEST_CONFIG_TEMPLATE"
 say "Updated: $DEST_PROJECT_TRUST_SNAPSHOT"
 say "Updated: $DEST_TOOLCHAIN_LOCK"

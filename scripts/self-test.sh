@@ -6,7 +6,8 @@ source "$ROOT_DIR/scripts/os/common/platform.sh"
 source "$ROOT_DIR/scripts/os/common/layout.sh"
 
 TEST_HOME="/tmp/codex-cli-bootstrap-selftest-home"
-PROFILE_ROOT="$(profile_runtime_root "macos")"
+PRIMARY_PROFILE="$(primary_payload_profile || true)"
+PROFILE_ROOT="$(profile_runtime_root "${PRIMARY_PROFILE:-linux}")"
 MANIFEST_FILE="$PROFILE_ROOT/skills/manifests/custom-skills.manifest.txt"
 
 say() { echo "[SELF-TEST] $*"; }
@@ -34,6 +35,7 @@ for f in \
   bash -n "$f"
 done
 say "Shell syntax: OK"
+say "Primary payload profile: ${PRIMARY_PROFILE:-linux}"
 
 scripts/check-toolchain.sh --strict-codex-only
 say "Toolchain parity check: OK"

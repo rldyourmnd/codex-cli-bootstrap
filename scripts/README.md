@@ -23,6 +23,8 @@ This directory contains the automation entrypoints for exporting, restoring, val
 - Version management:
   - `sync-codex-version.sh`
 - OS-specific installers:
+  - `os/README.md`
+  - `os/<os>/README.md`
   - `os/<os>/install/*`
 - Shared shell helpers:
   - `os/common/platform.sh`
@@ -43,11 +45,12 @@ GitHub Actions reuses the same repository entrypoints for repository consistency
 These scripts are the operational surface of the repository.
 If you change any export, manifest, parity, or restore behavior, update the relevant documentation under `docs/` and re-run the verification chain before merging.
 
-The current implementation is built around the os-first direct-files layout:
+The current implementation is built around a profile-aware OS-first layout:
 
 - shared agent profiles are resolved through `scripts/os/common/layout.sh`
-- the canonical populated runtime profile is `codex/os/macos/runtime/*`
-- Linux and Windows remain explicit runtime placeholders
+- the current primary exported runtime profile is `codex/os/linux/runtime/*`
+- macOS and Windows keep explicit native profile slots
+- install and verify fall back to the primary exported payload when a native OS payload is not present yet
+- export writes only to the runtime profile that matches the actual source OS
 
 `audit-codex-agents.sh` also attempts an additional OpenAI skill-creator validation when the local `quick_validate.py` helper and its Python dependency set are available.
-If `PyYAML` is missing on the local machine, the script degrades to a single warning instead of failing the repository audit.

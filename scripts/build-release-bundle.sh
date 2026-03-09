@@ -63,6 +63,9 @@ tmpdir="$(mktemp -d)"
 trap 'rm -rf "$tmpdir"' EXIT
 
 while IFS= read -r -d '' path; do
+  if [[ ! -e "$ROOT_DIR/$path" ]]; then
+    continue
+  fi
   mkdir -p "$tmpdir/$(dirname "$path")"
   cp -p "$ROOT_DIR/$path" "$tmpdir/$path"
 done < <(git -C "$ROOT_DIR" ls-files -z)

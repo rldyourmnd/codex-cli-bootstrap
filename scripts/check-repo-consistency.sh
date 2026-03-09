@@ -45,16 +45,22 @@ done
 
 cd "$ROOT_DIR"
 
-MACOS_PROFILE_ROOT="$(profile_runtime_root "macos")"
+PRIMARY_PROFILE="$(primary_payload_profile || true)"
+if [[ -z "$PRIMARY_PROFILE" ]]; then
+  err "No populated runtime profile found under codex/os/*/runtime"
+  exit 1
+fi
+
+PROFILE_ROOT="$(profile_runtime_root "$PRIMARY_PROFILE")"
 COMMON_AGENT_DIR="$(common_agent_skills_root)"
-CUSTOM_SKILLS_DIR="$MACOS_PROFILE_ROOT/skills/custom"
-CUSTOM_MANIFEST="$MACOS_PROFILE_ROOT/skills/manifests/custom-skills.manifest.txt"
-CURATED_MANIFEST="$MACOS_PROFILE_ROOT/skills/manifests/curated-manifest.txt"
-PORTABLE_RULES="$MACOS_PROFILE_ROOT/rules/default.rules"
-RULES_TEMPLATE="$MACOS_PROFILE_ROOT/rules/default.rules.template"
-RULES_SOURCE_SNAPSHOT="$MACOS_PROFILE_ROOT/rules/default.rules.source.snapshot"
-CONFIG_TEMPLATE="$MACOS_PROFILE_ROOT/config/config.template.toml"
-TOOLCHAIN_LOCK="$MACOS_PROFILE_ROOT/meta/toolchain.lock"
+CUSTOM_SKILLS_DIR="$PROFILE_ROOT/skills/custom"
+CUSTOM_MANIFEST="$PROFILE_ROOT/skills/manifests/custom-skills.manifest.txt"
+CURATED_MANIFEST="$PROFILE_ROOT/skills/manifests/curated-manifest.txt"
+PORTABLE_RULES="$PROFILE_ROOT/rules/default.rules"
+RULES_TEMPLATE="$PROFILE_ROOT/rules/default.rules.template"
+RULES_SOURCE_SNAPSHOT="$PROFILE_ROOT/rules/default.rules.source.snapshot"
+CONFIG_TEMPLATE="$PROFILE_ROOT/config/config.template.toml"
+TOOLCHAIN_LOCK="$PROFILE_ROOT/meta/toolchain.lock"
 
 required_files=(
   "README.md"
@@ -83,6 +89,7 @@ required_files=(
   "docs/ARCHITECTURE.md"
   "docs/setup/README.md"
   "docs/setup/PORTABLE_SETUP.md"
+  "docs/setup/PROFILE_MATRIX.md"
   "docs/setup/PROD_RUNBOOK.md"
   "docs/setup/os/macos.md"
   "docs/setup/os/linux.md"
@@ -92,17 +99,24 @@ required_files=(
   "codex/os/README.md"
   "codex/os/common/README.md"
   "codex/os/common/agents/README.md"
+  "codex/os/linux/README.md"
   "codex/os/macos/README.md"
+  "codex/os/windows/README.md"
   "codex/os/macos/runtime/README.md"
   "codex/os/linux/runtime/README.md"
   "codex/os/windows/runtime/README.md"
   "scripts/README.md"
+  "scripts/os/README.md"
+  "scripts/os/common/README.md"
+  "scripts/os/linux/README.md"
+  "scripts/os/macos/README.md"
+  "scripts/os/windows/README.md"
   "templates/README.md"
   "templates/AGENTS.md"
   "$CONFIG_TEMPLATE"
-  "$MACOS_PROFILE_ROOT/config/projects.local.example.toml"
-  "$MACOS_PROFILE_ROOT/config/projects.trust.snapshot.toml"
-  "$MACOS_PROFILE_ROOT/agents/global.AGENTS.md"
+  "$PROFILE_ROOT/config/projects.local.example.toml"
+  "$PROFILE_ROOT/config/projects.trust.snapshot.toml"
+  "$PROFILE_ROOT/agents/global.AGENTS.md"
   "$TOOLCHAIN_LOCK"
   "$PORTABLE_RULES"
   "$RULES_TEMPLATE"
@@ -122,13 +136,18 @@ required_dirs=(
   "codex/os/common"
   "codex/os/common/agents"
   "$COMMON_AGENT_DIR"
+  "codex/os/linux"
   "codex/os/macos"
-  "$MACOS_PROFILE_ROOT"
+  "codex/os/windows"
+  "$PROFILE_ROOT"
   "$CUSTOM_SKILLS_DIR"
-  "$MACOS_PROFILE_ROOT/skills/manifests"
+  "$PROFILE_ROOT/skills/manifests"
   "scripts"
   "scripts/os"
   "scripts/os/common"
+  "scripts/os/linux"
+  "scripts/os/macos"
+  "scripts/os/windows"
   "templates"
 )
 
@@ -145,11 +164,12 @@ while IFS= read -r script; do
 done < <(find scripts -type f -name '*.sh' | sort)
 say "Shell syntax: OK"
 
-python3 - <<'PY'
+CONFIG_TEMPLATE_PATH="$CONFIG_TEMPLATE" python3 - <<'PY'
 import tomllib
+import os
 from pathlib import Path
 
-path = Path("codex/os/macos/runtime/config/config.template.toml")
+path = Path(os.environ["CONFIG_TEMPLATE_PATH"])
 data = tomllib.loads(path.read_text(encoding="utf-8"))
 assert data.get("approval_policy") == "never"
 assert data.get("sandbox_mode") == "danger-full-access"
@@ -236,7 +256,7 @@ legacy_layout_hits="$(rg -n --hidden \
   --glob '!CHANGELOG.md' \
   --glob '!scripts/check-repo-consistency.sh' \
   --glob '!.git/*' \
-  'codex/config/|codex/agents/|codex/meta/|codex/rules/|codex/skills/custom-skills|skills/codex-agents|skills/README\.md|codex-workstation-bootstrap' \
+  '(^|[[:space:]`(])codex/config/|(^|[[:space:]`(])codex/agents/|(^|[[:space:]`(])codex/meta/|(^|[[:space:]`(])codex/rules/|(^|[[:space:]`(])codex/skills/custom-skills|(^|[[:space:]`(])skills/codex-agents|(^|[[:space:]`(])skills/README\.md|codex-workstation-bootstrap' \
   README.md docs codex scripts .github llms.txt llms-full.txt CITATION.cff CONTRIBUTING.md SECURITY.md SUPPORT.md CODE_OF_CONDUCT.md GOVERNANCE.md 2>/dev/null || true)"
 if [[ -n "$legacy_layout_hits" ]]; then
   err "Found stale legacy layout references"
