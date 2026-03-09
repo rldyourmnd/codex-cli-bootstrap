@@ -9,6 +9,7 @@ The repository has three layers:
 1. Repository-owned baseline
    - source-controlled shared agent profiles in `codex/os/common/agents/codex-agents/`
    - source-controlled docs in `docs/`
+   - reusable starter templates in `templates/`
    - source-controlled automation in `scripts/`
 2. Exported portable runtime state
    - sanitized config, rules, manifests, and direct custom skill payloads in `codex/os/macos/runtime/`
@@ -84,7 +85,10 @@ The target machine is validated with:
 - `codex/`: top-level exported artifact namespace
 - `codex/os/common/`: shared payload used across profiles
 - `codex/os/macos/runtime/`: canonical populated runtime payload
+- `templates/`: reusable starter docs and policy templates derived from the baseline
 - `scripts/`: operational lifecycle entrypoints
+
+Each major module also carries a local `README.md` where the module boundary matters, so contributors can navigate by directory instead of inferring structure from scripts alone.
 
 ## Truth Boundaries
 

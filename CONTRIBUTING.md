@@ -23,6 +23,7 @@ Changes must preserve reproducibility, deterministic structure, safety, and docu
 - Do not introduce overlap between shared agent profile names and custom skill names.
 - Update documentation whenever behavior, structure, or operator workflow changes.
 - If you change export/install/parity logic, update the relevant docs under `docs/` and module `README` files.
+- If you change canonical entrypoints, module boundaries, or discovery surfaces, update `llms.txt`, `llms-full.txt`, and the relevant module `README` files in the same pull request.
 
 ## Required Checks Before Opening A PR
 

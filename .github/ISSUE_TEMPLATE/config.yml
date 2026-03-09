@@ -1,5 +1,8 @@
 blank_issues_enabled: false
 contact_links:
+  - name: Questions and discussions
+    url: https://github.com/rldyourmnd/codex-cli-bootstrap/discussions
+    about: Use GitHub Discussions for setup questions, usage help, and architecture conversations.
   - name: Security report
     url: https://github.com/rldyourmnd/codex-cli-bootstrap/security/advisories/new
     about: Report security vulnerabilities privately.

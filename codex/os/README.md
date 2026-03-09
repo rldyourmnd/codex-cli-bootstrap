@@ -1,5 +1,19 @@
 # OS Layout
 
-- `common/` contains shared cross-OS payloads (agent profiles).
-- `macos/runtime/` is the canonical production payload.
-- `linux/runtime/` and `windows/runtime/` are clean placeholders for future parity.
+## Shared payload
+
+- `common/README.md`
+- `common/agents/README.md`
+- `common/agents/codex-agents/`
+
+## Runtime payloads
+
+- `macos/README.md`
+- `macos/runtime/README.md`
+- `linux/README.md`
+- `linux/runtime/README.md`
+- `windows/README.md`
+- `windows/runtime/README.md`
+
+`macos/runtime/` is the canonical populated payload.
+`linux/runtime/` and `windows/runtime/` remain explicit, documented placeholders so future parity work does not change the top-level hierarchy.

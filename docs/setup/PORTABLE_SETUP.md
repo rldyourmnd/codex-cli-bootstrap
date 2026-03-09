@@ -109,3 +109,5 @@ scripts/self-test.sh
 - [`README.md`](README.md)
 - [`PROD_RUNBOOK.md`](PROD_RUNBOOK.md)
 - [`os/macos.md`](os/macos.md)
+- [`os/linux.md`](os/linux.md)
+- [`os/windows.md`](os/windows.md)

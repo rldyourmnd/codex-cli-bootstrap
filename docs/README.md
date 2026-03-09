@@ -16,6 +16,7 @@ It is intended to be the first place a human maintainer or contributor reads whe
 - [`../codex/os/README.md`](../codex/os/README.md): OS payload overview
 - [`../codex/os/common/agents/README.md`](../codex/os/common/agents/README.md): shared agent profile baseline
 - [`../scripts/README.md`](../scripts/README.md): automation entrypoints and lifecycle flow
+- [`../templates/README.md`](../templates/README.md): reusable baseline templates for other repositories
 
 ## Community And Governance
 

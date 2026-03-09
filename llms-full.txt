@@ -9,8 +9,8 @@ It provides deterministic install, verification, and export workflows, with stri
 
 - Target OS payload: macOS
 - MCP baseline: 6 (`context7`, `sequential-thinking`, `github`, `shadcn`, `playwright`, `serena`)
-- Non-system skills: 33 total
-- Custom skills: 24 (`codex/os/macos/runtime/skills/custom/*`)
+- Non-system skills: 32 total
+- Custom skills: 23 (`codex/os/macos/runtime/skills/custom/*`)
 - Shared profiles: 9 (`codex/os/common/agents/codex-agents/*`)
 - Overlap policy: forbidden between shared and custom skill groups
 
@@ -23,6 +23,11 @@ It provides deterministic install, verification, and export workflows, with stri
 - `/docs/setup/PORTABLE_SETUP.md` - portable setup reference
 - `/docs/setup/PROD_RUNBOOK.md` - production restore runbook
 - `/docs/setup/os/macos.md` - macOS setup specifics
+- `/docs/setup/os/linux.md` - Linux setup specifics
+- `/docs/setup/os/windows.md` - Windows staged-support specifics
+- `/codex/os/macos/runtime/README.md` - populated runtime module index
+- `/codex/os/linux/runtime/README.md` - Linux placeholder runtime index
+- `/codex/os/windows/runtime/README.md` - Windows placeholder runtime index
 - `/codex/os/macos/runtime/config/config.template.toml` - config template with placeholders
 - `/codex/os/macos/runtime/config/projects.trust.snapshot.toml` - trust snapshot template
 - `/codex/os/macos/runtime/agents/global.AGENTS.md` - global runtime policy snapshot
@@ -31,6 +36,7 @@ It provides deterministic install, verification, and export workflows, with stri
 - `/codex/os/macos/runtime/meta/toolchain.lock` - toolchain lock snapshot
 - `/codex/os/macos/runtime/skills/manifests/custom-skills.manifest.txt` - custom skill canonical list
 - `/codex/os/common/agents/codex-agents/README.md` - shared profile docs
+- `/templates/AGENTS.md` - reusable repository AGENTS starter template
 
 ## Script contracts
 
@@ -58,6 +64,12 @@ It provides deterministic install, verification, and export workflows, with stri
 - Placeholder-only secrets in config templates.
 - Snapshot export sanitization for known token patterns.
 - Security policy and private disclosure path in `SECURITY.md`.
+
+## Community model
+
+- GitHub Discussions for setup questions and architecture conversations
+- GitHub Issues for reproducible bugs and feature requests
+- CODEOWNERS-based review ownership with owner-led governance
 
 ## Intended discovery terms
 

@@ -58,6 +58,8 @@ TOOLCHAIN_LOCK="$MACOS_PROFILE_ROOT/meta/toolchain.lock"
 
 required_files=(
   "README.md"
+  ".editorconfig"
+  ".gitattributes"
   "LICENSE"
   "CONTRIBUTING.md"
   "SECURITY.md"
@@ -83,13 +85,20 @@ required_files=(
   "docs/setup/PORTABLE_SETUP.md"
   "docs/setup/PROD_RUNBOOK.md"
   "docs/setup/os/macos.md"
+  "docs/setup/os/linux.md"
+  "docs/setup/os/windows.md"
   "docs/agents/README.md"
   "codex/README.md"
   "codex/os/README.md"
   "codex/os/common/README.md"
   "codex/os/common/agents/README.md"
   "codex/os/macos/README.md"
+  "codex/os/macos/runtime/README.md"
+  "codex/os/linux/runtime/README.md"
+  "codex/os/windows/runtime/README.md"
   "scripts/README.md"
+  "templates/README.md"
+  "templates/AGENTS.md"
   "$CONFIG_TEMPLATE"
   "$MACOS_PROFILE_ROOT/config/projects.local.example.toml"
   "$MACOS_PROFILE_ROOT/config/projects.trust.snapshot.toml"
@@ -120,6 +129,7 @@ required_dirs=(
   "scripts"
   "scripts/os"
   "scripts/os/common"
+  "templates"
 )
 
 for file in "${required_files[@]}"; do
@@ -226,7 +236,7 @@ legacy_layout_hits="$(rg -n --hidden \
   --glob '!CHANGELOG.md' \
   --glob '!scripts/check-repo-consistency.sh' \
   --glob '!.git/*' \
-  'codex/config/|codex/agents/|codex/meta/|codex/rules/|codex/skills/custom-skills|skills/codex-agents|skills/README\.md|templates/README\.md|codex-workstation-bootstrap' \
+  'codex/config/|codex/agents/|codex/meta/|codex/rules/|codex/skills/custom-skills|skills/codex-agents|skills/README\.md|codex-workstation-bootstrap' \
   README.md docs codex scripts .github llms.txt llms-full.txt CITATION.cff CONTRIBUTING.md SECURITY.md SUPPORT.md CODE_OF_CONDUCT.md GOVERNANCE.md 2>/dev/null || true)"
 if [[ -n "$legacy_layout_hits" ]]; then
   err "Found stale legacy layout references"

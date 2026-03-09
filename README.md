@@ -1,5 +1,10 @@
 # codex-cli-bootstrap
 
+[![Release](https://img.shields.io/github/v/release/rldyourmnd/codex-cli-bootstrap?sort=semver)](https://github.com/rldyourmnd/codex-cli-bootstrap/releases)
+[![CI](https://github.com/rldyourmnd/codex-cli-bootstrap/actions/workflows/ci.yml/badge.svg)](https://github.com/rldyourmnd/codex-cli-bootstrap/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Discussions](https://img.shields.io/github/discussions/rldyourmnd/codex-cli-bootstrap)](https://github.com/rldyourmnd/codex-cli-bootstrap/discussions)
+
 Portable Codex runtime baseline and public environment mirror for NDDev OpenNetwork.
 
 `codex-cli-bootstrap` is the public source of truth for the reusable Codex setup maintained by Danil Silantyev (`rldyourmnd`), Global CEO of NDDev (`nddev.it.com`), with development executed through NDDev OpenNetwork (`on.nddev.it.com`).
@@ -33,15 +38,18 @@ It packages a reproducible Codex runtime baseline, shared Codex agent profiles, 
 - [`docs/INDEX.md`](docs/INDEX.md): concise documentation index
 - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md): structure and data-flow overview
 - [`codex/os/README.md`](codex/os/README.md): OS payload map
+- [`codex/os/macos/runtime/README.md`](codex/os/macos/runtime/README.md): canonical populated runtime module map
 - [`codex/os/common/agents/README.md`](codex/os/common/agents/README.md): shared agent profile source of truth
 - [`codex/os/macos/README.md`](codex/os/macos/README.md): canonical runtime payload root
 - [`scripts/README.md`](scripts/README.md): automation entrypoints and verification flow
+- [`templates/README.md`](templates/README.md): reusable starter templates derived from this baseline
 - [`.github/`](.github): issue templates, PR template, CODEOWNERS, Dependabot, and GitHub Actions workflows
 
 ## Direct-Files Model
 
 This repository uses an os-first, direct-files layout. The canonical portable payload currently lives under:
 
+- `codex/os/macos/runtime/README.md`
 - `codex/os/macos/runtime/config/*`
 - `codex/os/macos/runtime/agents/*`
 - `codex/os/macos/runtime/rules/*`
@@ -51,6 +59,7 @@ This repository uses an os-first, direct-files layout. The canonical portable pa
 - `codex/os/common/agents/codex-agents/*`
 
 Linux and Windows directories are kept as explicit placeholders so the hierarchy stays stable as additional runtime payloads are added.
+Each runtime root has its own `README.md` so contributors can understand the module boundary without opening the entire tree.
 
 ## Quick Start
 
@@ -59,6 +68,8 @@ Canonical setup docs:
 - [`docs/setup/PORTABLE_SETUP.md`](docs/setup/PORTABLE_SETUP.md)
 - [`docs/setup/PROD_RUNBOOK.md`](docs/setup/PROD_RUNBOOK.md)
 - [`docs/setup/os/macos.md`](docs/setup/os/macos.md)
+- [`docs/setup/os/linux.md`](docs/setup/os/linux.md)
+- [`docs/setup/os/windows.md`](docs/setup/os/windows.md)
 
 Refresh the repository from a known-good local machine:
 
@@ -88,7 +99,7 @@ scripts/codex-activate.sh --check-only
 
 This project uses only free GitHub-native automation suitable for a public open source repository.
 
-- CI validates repository consistency and dry-runs the release bundle
+- CI validates repository consistency, agent-doc parity, and dry-runs the release bundle
 - Release automation builds a tagged portable bundle and publishes it to GitHub Releases
 - Dependabot keeps GitHub Actions dependencies current
 
@@ -109,6 +120,12 @@ Workflow entrypoints:
 - [`GOVERNANCE.md`](GOVERNANCE.md)
 - [`CHANGELOG.md`](CHANGELOG.md)
 - [`CITATION.cff`](CITATION.cff)
+
+## Support Paths
+
+- Use GitHub Discussions for setup questions, usage guidance, and architecture conversations
+- Use GitHub Issues for reproducible bugs, regressions, and concrete feature requests
+- Use [`SECURITY.md`](SECURITY.md) for vulnerabilities and sensitive reports
 
 ## Machine-Readable Discovery
 

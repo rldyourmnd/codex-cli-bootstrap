@@ -1,6 +1,6 @@
-# Ubuntu Setup
+# Linux Setup
 
-Use this guide when restoring the portable Codex baseline onto Ubuntu or a compatible Linux environment.
+Use this guide when restoring the portable Codex baseline onto Ubuntu or another compatible Linux environment.
 Read [`../README.md`](../README.md) and [`../PORTABLE_SETUP.md`](../PORTABLE_SETUP.md) first if you need the broader flow.
 
 ## 1. Install Codex

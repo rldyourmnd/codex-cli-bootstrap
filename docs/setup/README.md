@@ -10,8 +10,8 @@ This directory contains the operational documentation for exporting, restoring, 
 ## Per-OS Guides
 
 - [`os/macos.md`](os/macos.md): macOS-specific notes
-- [`os/ubuntu.md`](os/ubuntu.md): Ubuntu/Linux-specific notes
-- [`os/windows-skeleton.md`](os/windows-skeleton.md): Windows skeleton and current limitations
+- [`os/linux.md`](os/linux.md): Linux-specific notes
+- [`os/windows.md`](os/windows.md): Windows staged-support notes and current limitations
 
 ## Recommended Reading Order
 

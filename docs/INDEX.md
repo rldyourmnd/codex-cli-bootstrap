@@ -12,6 +12,8 @@
 - `docs/setup/PORTABLE_SETUP.md`
 - `docs/setup/PROD_RUNBOOK.md`
 - `docs/setup/os/macos.md`
+- `docs/setup/os/linux.md`
+- `docs/setup/os/windows.md`
 
 ## Agents
 
@@ -25,6 +27,14 @@
 - `codex/os/README.md`
 - `codex/os/common/README.md`
 - `codex/os/macos/README.md`
+- `codex/os/macos/runtime/README.md`
+- `codex/os/linux/runtime/README.md`
+- `codex/os/windows/runtime/README.md`
+
+## Templates
+
+- `templates/README.md`
+- `templates/AGENTS.md`
 
 ## Community And OSS
 

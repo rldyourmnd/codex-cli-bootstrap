@@ -20,3 +20,5 @@ dist/
 **/.serena/
 **/.cursor/
 **/.aider*
+!AGENTS.md
+!templates/AGENTS.md

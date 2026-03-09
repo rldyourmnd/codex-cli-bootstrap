@@ -8,6 +8,12 @@
 
 ## Public Support
 
+Use GitHub Discussions for:
+
+- setup and usage questions
+- architecture or workflow discussions
+- support requests that are not actionable bugs
+
 Use GitHub issues for:
 
 - reproducible bugs
