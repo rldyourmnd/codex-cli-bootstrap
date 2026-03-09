@@ -1,6 +1,7 @@
 # Windows Skeleton
 
 This repository includes Windows installer skeletons but treats macOS and Ubuntu/Linux as the primary production path.
+Read [`../README.md`](../README.md) and [`../PORTABLE_SETUP.md`](../PORTABLE_SETUP.md) first if you need the broader restore model.
 
 ## PowerShell installers
 
@@ -18,3 +19,4 @@ This repository includes Windows installer skeletons but treats macOS and Ubuntu
 
 - Keep `codex/os/windows/snapshots/full-home/` for future full-home Windows snapshot support.
 - Validate parity on Windows before promoting from skeleton to production.
+- Treat Windows support as explicitly staged, not fully parity-guaranteed today.

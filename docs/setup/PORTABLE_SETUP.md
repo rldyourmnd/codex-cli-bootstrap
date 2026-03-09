@@ -1,6 +1,7 @@
-# Portable Codex Setup (Full Mirror)
+# Portable Codex Setup And Restore Modes
 
-This document describes how to reproduce the same Codex environment on another machine from this repository.
+This is the canonical source-of-truth document for exporting, restoring, and validating the Codex environment represented by this repository.
+Other setup-facing pages should point back here instead of redefining the workflow.
 
 Per-OS quick guides:
 - `docs/setup/os/macos.md`
@@ -24,6 +25,29 @@ The snapshot intentionally includes only reproducible settings:
 
 Default export intentionally excludes runtime/session files (auth/session/history/log).
 Use `--with-full-home` if you need an absolute mirror, including runtime/session state.
+
+## Restore Modes
+
+### Portable baseline mode
+
+This is the default and recommended mode for most users.
+It restores the reproducible Codex baseline without committing live machine runtime state to the repository.
+
+Use:
+
+```bash
+scripts/bootstrap.sh --skip-curated
+```
+
+### Full-home mirror mode
+
+This mode restores an OS-specific full-home snapshot and is intended only when you explicitly need a same-family machine mirror.
+
+Use:
+
+```bash
+scripts/bootstrap.sh --skip-curated --full-home
+```
 
 ## Export from source machine
 
@@ -111,12 +135,6 @@ Portable-safe variant:
 scripts/bootstrap.sh --skip-curated --portable-rules --skip-project-trust --no-sync-codex-version --no-strict-toolchain
 ```
 
-Absolute mirror restore (same OS family as snapshot):
-
-```bash
-scripts/bootstrap.sh --skip-curated --full-home
-```
-
 ## Deterministic vs latest restore
 
 - Deterministic restore: `scripts/bootstrap.sh --skip-curated`
@@ -145,3 +163,12 @@ scripts/verify.sh --full-home
 - If curated install fails, rerun with `--skip-curated`.
 - If Codex version mismatch is reported, run `scripts/sync-codex-version.sh --apply`.
 - Windows skeleton installers are provided in `scripts/os/windows/install/`.
+
+## Related Documents
+
+- [`../../README.md`](../../README.md): project overview
+- [`README.md`](README.md): setup docs index
+- [`PROD_RUNBOOK.md`](PROD_RUNBOOK.md): operations, rollback, and drift management
+- [`os/macos.md`](os/macos.md): macOS quick guide
+- [`os/ubuntu.md`](os/ubuntu.md): Ubuntu/Linux quick guide
+- [`os/windows-skeleton.md`](os/windows-skeleton.md): Windows staged support notes

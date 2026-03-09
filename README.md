@@ -1,165 +1,116 @@
 # better-codex
 
-Production-ready, portable Codex environment mirror.
+Portable Codex runtime baseline and public environment mirror for NDDev OpenNetwork.
 
-This repository captures your local Codex setup and restores it on another machine in a few commands.
+This repository is the public source of truth for the reusable Codex setup maintained by Danil Silantyev (`rldyourmnd`), Global CEO of NDDev (`nddev.it.com`), with development driven by NDDev OpenNetwork (`on.nddev.it.com`).
+It packages a reproducible Codex runtime baseline, repository-owned agent skills, sanitized configuration snapshots, and operator documentation so the same working environment can be restored across machines in a controlled way.
 
-## OS-first layout
+## Ownership
 
-- `scripts/os/<os>/install/*`: platform installers (`codex`, optional `claude-code`)
-- `codex/os/<os>/snapshots/full-home/*`: optional full-home snapshots per OS
-- `docs/setup/os/*`: per-OS operator guides
+- Project owner and lead developer: Danil Silantyev (`rldyourmnd`)
+- Organization: NDDev (`nddev.it.com`)
+- Development initiative: NDDev OpenNetwork (`on.nddev.it.com`)
+- Merge, release, branding, and governance authority stay with the project owner and maintainers delegated by the owner
 
-## What is mirrored
+## What This Repository Is
+
+- A portable Codex environment mirror
+- A repository of Codex-native agent skills and operational profiles
+- A controlled export/import pipeline for `~/.codex`
+- A public open-source project with reproducible setup and contribution rules
+
+## Repository Modules
+
+- [`docs/`](docs/README.md): canonical in-repo wiki and operator documentation
+- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md): repository architecture and data flow
+- [`codex/`](codex/README.md): exported Codex artifacts, config templates, rule snapshots, and skill manifests
+- [`scripts/`](scripts/README.md): export, install, bootstrap, verification, and OS-specific automation
+- [`skills/`](skills/README.md): repository-owned Codex agent skill baseline
+- [`templates/`](templates/README.md): reusable project templates derived from this baseline
+- [`.github/`](.github): issue templates, PR template, Dependabot, and GitHub Actions workflows
+
+## Documentation And Wiki
+
+The canonical project wiki lives inside this repository under [`docs/`](docs/README.md).
+Start here:
+
+- [`docs/README.md`](docs/README.md): documentation home
+- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md): how export, install, and verification fit together
+- [`docs/setup/README.md`](docs/setup/README.md): setup and restore guides
+- [`docs/agents/README.md`](docs/agents/README.md): agent profile catalog
+- [`codex/README.md`](codex/README.md): exported artifact layout
+- [`scripts/README.md`](scripts/README.md): automation entrypoints
+- [`skills/README.md`](skills/README.md): repository-owned skill baseline
+- [`templates/README.md`](templates/README.md): reusable templates
+
+## Open Source Project Files
+
+- [`LICENSE`](LICENSE): project license
+- [`CONTRIBUTING.md`](CONTRIBUTING.md): contribution and verification rules
+- [`SECURITY.md`](SECURITY.md): vulnerability reporting policy
+- [`SUPPORT.md`](SUPPORT.md): support and triage guidance
+- [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md): collaboration standards
+- [`GOVERNANCE.md`](GOVERNANCE.md): decision model and maintainer authority
+- [`CHANGELOG.md`](CHANGELOG.md): repository change history
+
+## CI/CD
+
+This repository uses GitHub Actions only, which is the free and natural automation layer for a public open-source GitHub project.
+
+- CI validates repository consistency and dry-runs release bundle creation
+- Release automation builds a portable bundle and publishes it to GitHub Releases on version tags
+- Dependabot tracks GitHub Actions dependency updates
+
+Workflow entrypoints:
+
+- [`.github/workflows/ci.yml`](.github/workflows/ci.yml)
+- [`.github/workflows/release.yml`](.github/workflows/release.yml)
+- [`.github/dependabot.yml`](.github/dependabot.yml)
+- [`CODEOWNERS`](CODEOWNERS): review ownership defaults
+
+## Exported Runtime Surface
+
+The repository mirrors the portable parts of a Codex environment:
 
 - `codex/config/config.template.toml`: sanitized global Codex config template
-- `codex/agents/global.AGENTS.md`: global `~/.codex/AGENTS.md` snapshot
-- `codex/rules/default.rules`: global rules snapshot (home path tokenized as `__HOME__`)
-- `codex/skills/custom-skills.tar.gz.b64`: packed non-system skills snapshot
-- `codex/skills/custom-skills.sha256`: integrity checksum for packed skills
-- `codex/skills/custom-skills.manifest.txt`: exact skill list from snapshot
-- `codex/skills/curated-manifest.txt`: optional curated skill refresh list
-- `skills/codex-agents/*`: repository-owned baseline of your 9 agent profiles
-- `codex/os/<os>/snapshots/full-home/archive.tar.gz.b64`: optional full `~/.codex` snapshot per OS
-- `codex/os/<os>/snapshots/full-home/archive.sha256`: checksum for full snapshot
-- `codex/os/<os>/snapshots/full-home/manifest.txt`: manifest for full snapshot
-- `codex/meta/toolchain.lock`: exported versions (`codex/node/npm/python/uv/gh`)
-- `codex/config/projects.trust.snapshot.toml`: optional exported `[projects.*]` trust entries
-- `codex/rules/default.rules.source.snapshot`: exported source-machine rules snapshot
-- `scripts/export-from-local.sh`: refresh repo from current local `~/.codex`
-- `scripts/install.sh`: install config + AGENTS + rules + skills to target machine
-- `scripts/check-toolchain.sh`: parity check against `codex/meta/toolchain.lock`
-- `scripts/sync-codex-version.sh`: pin Codex CLI to exported version
-- `scripts/render-portable-rules.sh`: generate portable rules from curated manifest
-- `scripts/verify.sh`: validate MCP state and installed skill set
-- `scripts/codex-activate.sh`: health check for MCP/skills
-- `scripts/audit-codex-agents.sh`: validate codex-agent profile consistency
-- `scripts/bootstrap.sh`: one-command install + verify + activation check
-- `scripts/self-test.sh`: clean-room smoke test of the transfer flow
-- `scripts/os/common/platform.sh`: shared cross-platform shell helpers
-- `scripts/os/macos/install/ensure-codex.sh`: macOS Codex bootstrap (`brew install --cask codex`)
-- `scripts/os/linux/install/ensure-codex.sh`: Ubuntu/Linux Codex bootstrap (`npm i -g @openai/codex`)
-- `scripts/os/windows/install/ensure-codex.ps1`: Windows Codex skeleton (PowerShell)
-- `scripts/os/macos/install/ensure-claude-code.sh`: macOS Claude Code bootstrap
-- `scripts/os/linux/install/ensure-claude-code.sh`: Ubuntu/Linux Claude Code bootstrap
-- `scripts/os/windows/install/ensure-claude-code.ps1`: Windows Claude Code skeleton (PowerShell)
+- `codex/agents/global.AGENTS.md`: exported global `~/.codex/AGENTS.md`
+- `codex/rules/default.rules`: portable rules rendered from curated manifest
+- `codex/rules/default.rules.source.snapshot`: source-machine rules snapshot
+- `codex/skills/custom-skills.manifest.txt`: exact installed non-system skill list
+- `codex/skills/custom-skills.tar.gz.b64`: packed non-system skill snapshot
+- `codex/skills/custom-skills.sha256`: integrity checksum for packed skill snapshot
+- `codex/skills/curated-manifest.txt`: curated upstream skill refresh set
+- `codex/meta/toolchain.lock`: exported `codex/node/npm/python/uv/gh` versions
+- `codex/config/projects.trust.snapshot.toml`: optional exported project trust entries
+- `skills/codex-agents/*`: repository-owned baseline agent skills
+- `codex/os/<os>/snapshots/full-home/`: optional OS-specific full-home snapshot location
 
-## Security
+Default export mode excludes runtime/session state such as auth, history, and transient logs.
+Use `scripts/export-from-local.sh --with-full-home` only when you intentionally need an absolute machine snapshot for the same OS family.
 
-Secrets are not committed to git in default export mode.
-Export redacts generic secret-like config keys (`*KEY*`, `*TOKEN*`, `*SECRET*`, `*PASSWORD*`), while preserving install placeholders for Context7 and GitHub MCP.
+## Quick Start
 
-Provide at install time:
+Canonical workflow:
 
-- `CONTEXT7_API_KEY`
-- `GITHUB_MCP_TOKEN`
+- source-of-truth setup and restore guide: [`docs/setup/PORTABLE_SETUP.md`](docs/setup/PORTABLE_SETUP.md)
+- operations and rollback guide: [`docs/setup/PROD_RUNBOOK.md`](docs/setup/PROD_RUNBOOK.md)
 
-If you use `--with-full-home`, the snapshot includes runtime/session data and secret values from `~/.codex`.
-
-## Source machine: refresh snapshot
+Source machine refresh:
 
 ```bash
 scripts/export-from-local.sh
 scripts/self-test.sh
 ```
 
-Optional source path:
-
-```bash
-scripts/export-from-local.sh /path/to/.codex
-```
-
-Absolute mirror (includes full `~/.codex`):
-
-```bash
-scripts/export-from-local.sh --with-full-home
-```
-
-Safety overrides (use only intentionally):
-
-```bash
-scripts/export-from-local.sh --allow-empty-agents
-scripts/export-from-local.sh --allow-empty-skills
-```
-
-By default export now fails if source `~/.codex/AGENTS.md` is empty or if no non-system skills are found, to prevent accidental snapshot corruption.
-
-## Target machine: restore full state
-
-1. Install Codex CLI:
-
-macOS:
-
-```bash
-brew install --cask codex
-```
-
-Linux:
-
-```bash
-npm i -g @openai/codex
-```
-
-2. Clone this repo.
-
-3. Export secrets:
+Deterministic restore on a target machine:
 
 ```bash
 export CONTEXT7_API_KEY='ctx7sk-...'
 export GITHUB_MCP_TOKEN="$(gh auth token)"
-```
-
-4. Run full bootstrap:
-
-```bash
 scripts/bootstrap.sh --skip-curated
 ```
 
-Optional: include Claude Code install in the same run:
-
-```bash
-scripts/bootstrap.sh --skip-curated --with-claude-code
-```
-
-`--skip-curated` keeps restore deterministic from the committed snapshot.
-Install now always applies repository baseline agent skills from `skills/codex-agents` plus the full snapshot in `codex/skills/custom-skills.*`.
-
-If you want an additional curated refresh from `openai/skills`, run without `--skip-curated`.
-Operational runbook: `docs/setup/PROD_RUNBOOK.md`.
-
-Absolute mirror restore (full `~/.codex` snapshot, same OS family):
-
-```bash
-scripts/bootstrap.sh --skip-curated --full-home
-```
-
-Windows skeleton:
-- Codex and Claude Code PowerShell installers are under `scripts/os/windows/install/`.
-- Full automation for Windows is intentionally staged as skeleton-first; primary production path is macOS and Ubuntu/Linux.
-
-## Parity modes
-
-- Exact parity mode (default):
-  - uses source-machine rules snapshot when available,
-  - applies exported project trust entries when available,
-  - syncs Codex CLI version to `codex/meta/toolchain.lock`,
-  - enforces toolchain parity checks.
-
-- Portable-safe mode:
-
-```bash
-scripts/bootstrap.sh --skip-curated --portable-rules --skip-project-trust --no-sync-codex-version --no-strict-toolchain
-```
-
-## Quick commands
-
-- Dry-run install:
-
-```bash
-scripts/install.sh --dry-run --force --skip-curated --clean-skills --rules-mode exact
-```
-
-- Verify current setup:
+Post-restore validation:
 
 ```bash
 scripts/check-toolchain.sh --strict-codex-only
@@ -168,14 +119,20 @@ scripts/audit-codex-agents.sh
 scripts/codex-activate.sh --check-only
 ```
 
-- Verify full-home restore:
+## Security And Secrets
 
-```bash
-scripts/verify.sh --full-home
-```
+Do not commit secrets, tokens, auth state, or private runtime logs.
+Portable export mode redacts secret-like config values and preserves install placeholders for:
 
-- Pin Codex version from lock:
+- `CONTEXT7_API_KEY`
+- `GITHUB_MCP_TOKEN`
 
-```bash
-scripts/sync-codex-version.sh --apply
-```
+Read [`SECURITY.md`](SECURITY.md) before reporting vulnerabilities.
+
+## Project Status Model
+
+- Portable-safe mode is available for cross-machine transfer with reduced local coupling
+- Exact parity mode is available for restoring a known-good environment baseline
+- Full-home restore is optional and OS-specific by design
+
+See [`docs/setup/PORTABLE_SETUP.md`](docs/setup/PORTABLE_SETUP.md) and [`docs/setup/PROD_RUNBOOK.md`](docs/setup/PROD_RUNBOOK.md) for the operational details.

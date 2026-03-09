@@ -1,6 +1,8 @@
 # Codex Environment Runbook
 
 This runbook is for operating this repository as a production-grade Codex environment mirror.
+The canonical step-by-step restore workflow lives in [`PORTABLE_SETUP.md`](PORTABLE_SETUP.md).
+This document focuses on repeatable operations, rollback, and drift control around that workflow.
 
 ## 1. Source machine update flow
 
@@ -23,10 +25,20 @@ scripts/self-test.sh
 
 ## 2. Target machine restore flow (exact parity)
 
+Canonical restore instruction:
+
+```bash
+scripts/bootstrap.sh --skip-curated
+```
+
+Reference:
+- [`PORTABLE_SETUP.md`](PORTABLE_SETUP.md)
+
+Required environment variables:
+
 ```bash
 export CONTEXT7_API_KEY='ctx7sk-...'
 export GITHUB_MCP_TOKEN="$(gh auth token)"
-scripts/bootstrap.sh --skip-curated
 ```
 
 Restore guarantees:
@@ -60,6 +72,9 @@ scripts/bootstrap.sh --skip-curated --with-claude-code
 ```
 
 ## 3. Target machine restore flow (portable-safe)
+
+Reference:
+- [`PORTABLE_SETUP.md`](PORTABLE_SETUP.md)
 
 ```bash
 export CONTEXT7_API_KEY='ctx7sk-...'

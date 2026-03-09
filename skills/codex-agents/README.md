@@ -1,6 +1,7 @@
 # Codex Agent Skills
 
-This directory contains Codex-native agent implementations as skills.
+This directory contains Codex-native agent implementations as skills for `better-codex`, the public Codex bootstrap repository maintained by Danil Silantyev (`rldyourmnd`) for NDDev and NDDev OpenNetwork (`on.nddev.it.com`).
+Skill curation, merge authority, and release distribution remain with the project owner and NDDev maintainers.
 
 Why skills:
 - Codex supports reusable specialization via `SKILL.md` (+ optional `agents/openai.yaml`).
