@@ -12,13 +12,13 @@ Please think step by step, very deep and very hard. Work with surgical precision
 
 ### Tool Priority
 | Task | Primary Tool | Fallback | Notes |
-| Symbol search | Serena find_symbol | Grep | Never raw grep for code symbols |
+| Symbol search | Serena find_symbol | ripgrep (`rg`) | Never use plain `grep` for code symbols; if semantic search is unavailable, use `ripgrep` |
 | Code editing | Serena symbolic tools | Edit | Prefer replace_symbol_body |
 | File creation | Serena insert_after_symbol | Write | Maintain code structure |
 | External libraries | Context7 query-docs | WebSearch | Query BEFORE any usage |
 | Planning | Sequential Thinking | - | All decisions require this |
 | Project knowledge | Serena memories | - | Source of truth for project |
-| Code relationships | Serena find_referencing_symbols | Grep | Trace symbol usage via LSP |
+| Code relationships | Serena find_referencing_symbols | ripgrep (`rg`) | Trace symbol usage via LSP |
 | Codebase research | better-explorer agent | Explore agent | Deep investigation with Serena semantic tools |
 | GitHub actions | GitHub MCP | gh CLI | Prefer MCP first |
 
@@ -84,6 +84,7 @@ Use for all planning decisions. Minimum 5 rounds. Set `nextThoughtNeeded: true` 
 
 ### Naming Convention
 Format: `[AREA]_[NN]_[name].md`
+Examples: `CORE_01_project_overview.md`, `API_02_user_contracts.md`, `INFRA_03_ci_pipeline.md`
 
 | Area | Usage |
 | CORE | Project-wide, overview, conventions |
@@ -128,16 +129,16 @@ Area: <AREA tag>
 Always prefer specialized agents over built-in agents and direct tool calls. Agents use Serena LSP and MCP tools.
 
 ### Agent Routing
-| Task | Agent | Model | Color | When to Use |
-| Codebase exploration | better-explorer | Sonnet | blue | ANY code investigation, research, architecture analysis, quality audit, tracing implementations, finding patterns |
-| Memory management | serena-sync | Sonnet | green | Create, update, audit, delete Serena memories. Persistent operation tracking |
-| Version freshness | version-patrol | Sonnet | yellow | Check ALL deps, runtimes, tooling, infra against latest stable. Uses WebSearch + Context7 |
-| Deep reasoning | better-think | Sonnet | purple | Multi-pass reasoning with Sequential Thinking + Context7 + code evidence |
-| Implementation planning | better-plan | Sonnet | cyan | Tactical plans with Serena + Sequential Thinking + Context7. ALWAYS enter plan mode first |
-| Code review | better-code-review | Sonnet | orange | Semantic review via Serena LSP. Scope: git diff, files, branches. Bugs, security, breaking changes |
-| Live API testing | manual-tester | Sonnet | magenta | QA via curl + SSH. Auto-discovers endpoints from code, tests live server, monitors logs |
-| Production debugging | better-debugger | Sonnet | white | SSH logs + Serena LSP code tracing + git blame. Root cause analysis |
-| Deploy pipeline | github-server-sync | Sonnet | red | Commits, PR to dev, auto-merge, SSH server sync, verification. GitHub MCP |
+| Task | Agent | Model | When to Use |
+| Codebase exploration | better-explorer | gpt-5.4 | ANY code investigation, research, architecture analysis, quality audit, tracing implementations, finding patterns |
+| Memory management | serena-sync | gpt-5.4 | Create, update, audit, delete Serena memories. Persistent operation tracking |
+| Version freshness | version-patrol | gpt-5.4 | Check ALL deps, runtimes, tooling, infra against latest stable. Uses WebSearch + Context7 |
+| Deep reasoning | better-think | gpt-5.4 | Multi-pass reasoning with Sequential Thinking + Context7 + code evidence |
+| Implementation planning | better-plan | gpt-5.4 | Tactical plans with Serena + Sequential Thinking + Context7. ALWAYS enter plan mode first |
+| Code review | better-code-review | gpt-5.4 | Semantic review via Serena LSP. Scope: git diff, files, branches. Bugs, security, breaking changes |
+| Live API testing | manual-tester | gpt-5.4 | QA via Chrome DevTools MCP, curl, and SSH. Auto-discovers endpoints from code, validates browser and API flows, monitors logs |
+| Production debugging | better-debugger | gpt-5.4 | SSH logs + Serena LSP code tracing + git blame. Root cause analysis |
+| Deploy pipeline | github-server-sync | gpt-5.4 | Commits, PR to dev, auto-merge, SSH server sync, verification. GitHub MCP |
 
 ### Agent Notes
 - **better-explorer**: Primary exploration agent. Always prefer over built-in Explore agent.
@@ -147,10 +148,10 @@ Always prefer specialized agents over built-in agents and direct tool calls. Age
 - **better-think**: Strictly sequential: Sequential Thinking -> Context7 -> synthesis. Saves to `.serena/reasoning/`.
 - **better-code-review**: Read-only semantic review. Pass scope in prompt: git diff, branch diff, or files. `memory: user`.
 
-SSH agents share base params: `SSH_HOST`, `SSH_USER`, `SSH_PORT`, `SERVER_PROJECT_PATH`.
-- **manual-tester**: SSH base + `API_BASE_URL`. `memory: project`.
-- **better-debugger**: SSH base + optional `LOG_PATH`, `SYMPTOM`. `memory: project`.
-- **github-server-sync**: SSH base + `RESTART_CMD`. Never force pushes, never restarts server.
+SSH agents receive an SSH command as input, for example `ssh nddevserver`.
+- **manual-tester**: Chrome DevTools MCP + SSH command + `API_BASE_URL`. `memory: project`.
+- **better-debugger**: SSH command + optional `LOG_PATH`, `SYMPTOM`. `memory: project`.
+- **github-server-sync**: SSH command + `RESTART_CMD`. Never force pushes, never restarts server.
 
 ## GIT WORKFLOW
 
@@ -180,14 +181,10 @@ Rules: English only, descriptive, atomic (one logical change), no emojis.
 | Skip tests | Test before commit |
 | Commit secrets | Self-review changes |
 | Large uncommented changes | Keep commits atomic |
+| Large mixed-scope commits | Create many atomic logical commits during GitHub work |
 | Commit broken code | Verify build passes |
 
 ## CODE STANDARDS
-
-### Language-Specific Rules
-Detailed rules per language in `~/.claude/rules/` (loaded conditionally via `paths:` frontmatter - only when working with matching files):
-TS/TSX, JS/JSX, Python, Rust, C++, C, Dart, PHP, CSS/SCSS, Shell, Docker.
-Includes naming conventions, patterns, FSD (frontend), VSA (backend).
 
 ### Absolute Rules - NO EXCEPTIONS
 - No AI attribution or co-authorship anywhere - user is sole author of ALL output
@@ -204,4 +201,4 @@ Includes naming conventions, patterns, FSD (frontend), VSA (backend).
 
 ## QUALITY GATES
 
-Before any commit: type checks pass, linter passes, tests pass, project patterns followed, Serena memories updated if applicable.
+Before any commit: type checks pass, linter passes, tests pass, project patterns followed.
