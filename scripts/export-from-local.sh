@@ -108,7 +108,7 @@ require_tool() {
   fi
 }
 
-for tool in awk sed rsync; do
+for tool in awk python3 sed rsync; do
   require_tool "$tool"
 done
 
@@ -150,10 +150,39 @@ mkdir -p \
 
 cp "$SOURCE_CONFIG" "$DEST_CONFIG_TEMPLATE"
 
-sed_inplace "$DEST_CONFIG_TEMPLATE" \
-  -e 's|--api-key", "[^"]*"|--api-key", "__CONTEXT7_API_KEY__"|g' \
-  -e 's|Authorization = "Bearer [^"]*"|Authorization = "Bearer __GITHUB_MCP_TOKEN__"|g' \
-  -e 's|bearer_token_env_var = "[^"]*"|bearer_token_env_var = "GITHUB_MCP_TOKEN"|g'
+python3 - "$DEST_CONFIG_TEMPLATE" <<'PY'
+from pathlib import Path
+import re
+import sys
+
+path = Path(sys.argv[1])
+lines = path.read_text(encoding="utf-8").splitlines()
+sanitized = []
+current_section = ""
+
+for line in lines:
+    stripped = line.strip()
+    if stripped.startswith("[") and stripped.endswith("]"):
+        current_section = stripped[1:-1]
+
+    line = re.sub(r'--api-key", "[^"]*"', '--api-key", "__CONTEXT7_API_KEY__"', line)
+
+    if current_section == "mcp_servers.context7.http_headers":
+        if re.match(r'\s*CONTEXT7_API_KEY\s*=\s*"[^"]*"', line):
+            indent = line[: len(line) - len(line.lstrip())]
+            line = f'{indent}CONTEXT7_API_KEY = "__CONTEXT7_API_KEY__"'
+        elif re.match(r'\s*Authorization\s*=\s*"Bearer ctx7sk-[^"]*"', line):
+            indent = line[: len(line) - len(line.lstrip())]
+            line = f'{indent}Authorization = "Bearer __CONTEXT7_API_KEY__"'
+    elif current_section == "mcp_servers.github.http_headers":
+        if re.match(r'\s*Authorization\s*=\s*"Bearer [^"]*"', line):
+            indent = line[: len(line) - len(line.lstrip())]
+            line = f'{indent}Authorization = "Bearer __GITHUB_MCP_TOKEN__"'
+
+    sanitized.append(line)
+
+path.write_text("\n".join(sanitized) + "\n", encoding="utf-8")
+PY
 
 awk '
   BEGIN { skip=0 }
