@@ -115,6 +115,7 @@ scripts/self-test.sh
 - If `codex mcp list` is unavailable, install or upgrade Codex CLI first.
 - If the curated install step fails, rerun with `--skip-curated`.
 - If toolchain mismatch is reported, run `scripts/sync-codex-version.sh --apply`.
+- On Linux, the portable Serena MCP entry restores missing GUI session variables before launch so the web dashboard can auto-open under Codex. If the browser still does not open after install, restart Codex and use the dashboard URL shown in Serena logs as a fallback.
 
 ## Related Documents
 

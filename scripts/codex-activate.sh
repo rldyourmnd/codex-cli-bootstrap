@@ -18,6 +18,10 @@ if ! command -v codex >/dev/null 2>&1; then
   echo "[ERROR] codex CLI is not installed or not in PATH"
   exit 1
 fi
+if ! command -v python3 >/dev/null 2>&1; then
+  echo "[ERROR] python3 is not installed or not in PATH"
+  exit 1
+fi
 
 CODEX_HOME_DIR="${CODEX_HOME:-$HOME/.codex}"
 CONFIG_FILE="$CODEX_HOME_DIR/config.toml"
@@ -75,9 +79,24 @@ warn() { echo "[WARN] $*"; warn_count=$((warn_count + 1)); }
 err() { echo "[ERROR] $*"; err_count=$((err_count + 1)); }
 
 say "Collecting MCP status..."
-MCP_LIST="$(codex mcp list || true)"
-if [[ -z "$MCP_LIST" ]]; then
-  err "Unable to read MCP status via 'codex mcp list'"
+MCP_LIST_JSON="$(codex mcp list --json || true)"
+if [[ -z "$MCP_LIST_JSON" ]]; then
+  err "Unable to read MCP status via 'codex mcp list --json'"
+fi
+
+if [[ -f "$CONFIG_FILE" ]]; then
+  if grep -Eq -- '--enable-web-dashboard' "$CONFIG_FILE" && grep -Eq -- '--open-web-dashboard' "$CONFIG_FILE"; then
+    say "Serena dashboard flags found in Codex config"
+  else
+    warn "Serena MCP config is missing dashboard startup flags"
+  fi
+  if grep -Eq 'DBUS_SESSION_BUS_ADDRESS|WAYLAND_DISPLAY|/tmp/\.X11-unix/X' "$CONFIG_FILE"; then
+    say "Serena display environment recovery found in Codex config"
+  else
+    warn "Serena MCP config is missing display environment recovery for browser auto-open"
+  fi
+else
+  warn "Codex config not found at $CONFIG_FILE"
 fi
 
 enable_mcp() {
@@ -93,11 +112,21 @@ enable_mcp() {
 }
 
 for mcp in "${REQUIRED_MCPS[@]}"; do
-  if ! grep -Eq "^${mcp}[[:space:]]+" <<<"$MCP_LIST"; then
+  state="$(printf '%s' "$MCP_LIST_JSON" | python3 -c '
+import json
+import sys
+
+name = sys.argv[1]
+for entry in json.load(sys.stdin):
+    if entry.get("name") == name:
+        print("enabled" if entry.get("enabled") else "disabled")
+        raise SystemExit(0)
+raise SystemExit(1)
+' "$mcp")" || {
     err "Missing MCP config: $mcp"
     continue
-  fi
-  if grep -Eq "^${mcp}[[:space:]]+.*[[:space:]]enabled[[:space:]]" <<<"$MCP_LIST"; then
+  }
+  if [[ "$state" == "enabled" ]]; then
     say "MCP present/enabled: $mcp"
   else
     warn "MCP configured but disabled: $mcp"
@@ -106,16 +135,35 @@ for mcp in "${REQUIRED_MCPS[@]}"; do
 
 done
 
-MCP_LIST_AFTER="$(codex mcp list || true)"
-MCP_LIST_AFTER_CLEAN="$(printf '%s\n' "$MCP_LIST_AFTER" | tr -d '\r' | sed -E 's/\x1B\\[[0-9;]*[[:alpha:]]//g')"
-if grep -Eiq "context7.*not logged in" <<<"$MCP_LIST_AFTER_CLEAN"; then
+MCP_LIST_AFTER_JSON="$(codex mcp list --json || true)"
+context7_auth="$(printf '%s' "$MCP_LIST_AFTER_JSON" | python3 -c '
+import json
+import sys
+
+for entry in json.load(sys.stdin):
+    if entry.get("name") == "context7":
+        print(entry.get("auth_status") or "")
+        raise SystemExit(0)
+raise SystemExit(1)
+')"
+if [[ "$context7_auth" == "not_logged_in" ]]; then
   if [[ -f "$CONFIG_FILE" ]] && grep -Eq '^CONTEXT7_API_KEY = "[^"]+"' "$CONFIG_FILE" && ! grep -q '__CONTEXT7_API_KEY__' "$CONFIG_FILE"; then
     say "context7 reports not logged in, but token header is configured in config.toml (can be expected with token-based auth)."
   else
     warn "context7 MCP is enabled but not logged in (check CONTEXT7_API_KEY)"
   fi
 fi
-if grep -Eiq "github.*not logged in" <<<"$MCP_LIST_AFTER_CLEAN"; then
+github_auth="$(printf '%s' "$MCP_LIST_AFTER_JSON" | python3 -c '
+import json
+import sys
+
+for entry in json.load(sys.stdin):
+    if entry.get("name") == "github":
+        print(entry.get("auth_status") or "")
+        raise SystemExit(0)
+raise SystemExit(1)
+')"
+if [[ "$github_auth" == "not_logged_in" ]]; then
   if [[ -f "$CONFIG_FILE" ]] && grep -Eq '^Authorization = "Bearer [^"]+"' "$CONFIG_FILE" && ! grep -q '__GITHUB_MCP_TOKEN__' "$CONFIG_FILE"; then
     say "github reports not logged in, but bearer header is configured in config.toml (can be expected with token-based auth)."
   else

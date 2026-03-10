@@ -50,6 +50,10 @@ if ! command -v codex >/dev/null 2>&1; then
   err "codex CLI not found"
   exit 1
 fi
+if ! command -v python3 >/dev/null 2>&1; then
+  err "python3 not found"
+  exit 1
+fi
 
 if [[ "$REQUESTED_PROFILE" != "$PROFILE_OS" ]]; then
   warn "Profile '$REQUESTED_PROFILE' has no payload, using '$PROFILE_OS'"
@@ -90,18 +94,28 @@ if [[ -d "$SKILLS_DIR/custom" && ! -d "$SKILLS_DIR/agent-development" ]]; then
   SKILLS_ROOT="$SKILLS_DIR/custom"
 fi
 
-status="$(codex mcp list || true)"
-if [[ -z "$status" ]]; then
-  err "Failed to read MCP table"
+status_json="$(codex mcp list --json || true)"
+if [[ -z "$status_json" ]]; then
+  err "Failed to read MCP table as JSON"
   exit 1
 fi
 
 for mcp in "${REQUIRED_MCPS[@]}"; do
-  if ! grep -Eq "^${mcp}[[:space:]]+" <<<"$status"; then
+  state="$(printf '%s' "$status_json" | python3 -c '
+import json
+import sys
+
+name = sys.argv[1]
+for entry in json.load(sys.stdin):
+    if entry.get("name") == name:
+        print("enabled" if entry.get("enabled") else "disabled")
+        raise SystemExit(0)
+raise SystemExit(1)
+' "$mcp")" || {
     err "Missing MCP: $mcp"
     exit 1
-  fi
-  if ! grep -E "^${mcp}[[:space:]].*[[:space:]]enabled([[:space:]]|$)" <<<"$status" >/dev/null; then
+  }
+  if [[ "$state" != "enabled" ]]; then
     err "MCP configured but not enabled: $mcp"
     exit 1
   fi
@@ -117,6 +131,20 @@ if ! grep -q '__GITHUB_MCP_TOKEN__' "$CONFIG_FILE"; then
   say "Config appears tokenized for GitHub MCP"
 else
   warn "Config still contains GitHub MCP placeholder"
+fi
+
+if grep -Eq -- '--enable-web-dashboard' "$CONFIG_FILE" && grep -Eq -- '--open-web-dashboard' "$CONFIG_FILE"; then
+  say "Serena dashboard auto-open flags found"
+else
+  err "Serena MCP missing dashboard startup flags"
+  exit 1
+fi
+
+if grep -Eq 'DBUS_SESSION_BUS_ADDRESS|WAYLAND_DISPLAY|/tmp/\.X11-unix/X' "$CONFIG_FILE"; then
+  say "Serena display environment recovery wrapper found"
+else
+  err "Serena MCP missing display environment recovery wrapper"
+  exit 1
 fi
 
 if ! grep -Eiq 'think step by step' "$GLOBAL_AGENTS_FILE"; then

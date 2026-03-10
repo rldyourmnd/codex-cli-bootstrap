@@ -28,5 +28,34 @@ command = "npx"
 args = ["-y", "chrome-devtools-mcp@latest"]
 
 [mcp_servers.serena]
-command = "uvx"
-args = ["--from", "git+https://github.com/oraios/serena", "serena", "start-mcp-server", "--context", "codex", "--enable-web-dashboard", "--open-web-dashboard"]
+startup_timeout_sec = 60
+command = "/usr/bin/bash"
+args = [
+  "-lc",
+  '''
+uid="$(id -u)"
+export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/${uid}}"
+if [[ -z "${DBUS_SESSION_BUS_ADDRESS:-}" && -S "${XDG_RUNTIME_DIR}/bus" ]]; then
+  export DBUS_SESSION_BUS_ADDRESS="unix:path=${XDG_RUNTIME_DIR}/bus"
+fi
+if [[ -z "${WAYLAND_DISPLAY:-}" ]]; then
+  for wayland_socket in "${XDG_RUNTIME_DIR}"/wayland-*; do
+    if [[ -S "$wayland_socket" ]]; then
+      export WAYLAND_DISPLAY="${wayland_socket##*/}"
+      export XDG_SESSION_TYPE="${XDG_SESSION_TYPE:-wayland}"
+      break
+    fi
+  done
+fi
+if [[ -z "${DISPLAY:-}" ]]; then
+  for x_socket in /tmp/.X11-unix/X*; do
+    if [[ -S "$x_socket" ]]; then
+      export DISPLAY=":${x_socket##*/X}"
+      export XDG_SESSION_TYPE="${XDG_SESSION_TYPE:-x11}"
+      break
+    fi
+  done
+fi
+exec uvx --from git+https://github.com/oraios/serena serena start-mcp-server --context codex --enable-web-dashboard true --open-web-dashboard true
+'''
+]

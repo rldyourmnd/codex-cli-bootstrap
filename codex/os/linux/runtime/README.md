@@ -15,6 +15,7 @@ It was exported from the source Linux machine and is the active reference payloa
 ## Truth Boundaries
 
 - `config/config.template.toml` defines the current portable config baseline.
+- The Linux Serena MCP entry in `config/config.template.toml` includes a small environment recovery wrapper so Codex-launched Serena sessions can still auto-open the web dashboard when GUI session variables are missing.
 - `rules/default.rules.source.snapshot` preserves the exported source-machine rules.
 - `rules/default.rules` and `rules/default.rules.template` are derived outputs, not hand-maintained policy files.
 - `meta/toolchain.lock` is the runtime version contract used by verification scripts.
