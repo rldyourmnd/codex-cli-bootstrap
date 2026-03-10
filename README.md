@@ -30,8 +30,10 @@ It packages a reproducible Codex baseline, shared Codex agent profiles, sanitize
 - MCP baseline: `context7`, `sequential-thinking`, `github`, `shadcn`, `chrome-devtools`, `serena`
 - Shared agent profiles: `9` under `codex/os/common/agents/codex-agents`
 - Custom skills: `23` under `codex/os/linux/runtime/skills/custom`
-- Config defaults: `approval_policy = "never"` and `sandbox_mode = "danger-full-access"`
+- Config defaults: `personality = "pragmatic"`, `web_search = "live"`, `approval_policy = "never"`, and `sandbox_mode = "danger-full-access"`
 - Toolchain lock: Codex `0.112.0`, Node `25.8.0`, npm `11.11.0`, Python `3.14.3`, uv `0.10.9`, gh `2.87.3`
+
+The repository baseline intentionally encodes full-access automation in `config.toml`. The current Codex CLI documents `--full-auto` as `-a on-request --sandbox workspace-write`, so this repository does not rely on that alias for exact restores.
 
 ## OS Profile Model
 

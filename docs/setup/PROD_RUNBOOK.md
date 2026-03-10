@@ -19,6 +19,8 @@ export GITHUB_MCP_TOKEN="$(gh auth token)"
 scripts/bootstrap.sh --skip-curated
 ```
 
+Use the repository config baseline for full-access automation. The current Codex CLI `--full-auto` alias is intentionally not treated as equivalent to this exact mirror mode.
+
 ## Target Machine Restore (Portable-Safe)
 
 ```bash

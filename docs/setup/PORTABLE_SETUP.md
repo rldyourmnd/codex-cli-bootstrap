@@ -58,6 +58,8 @@ Run the canonical restore flow:
 scripts/bootstrap.sh --skip-curated
 ```
 
+This repository does not rely on `codex --full-auto` for its exact restore baseline. The current CLI maps that alias to `-a on-request --sandbox workspace-write`, while the mirrored runtime baseline is stored explicitly in `config.template.toml` as `approval_policy = "never"` and `sandbox_mode = "danger-full-access"`.
+
 ## Deterministic Install Only
 
 Use this when Codex is already installed and you want only the repository payload applied:
