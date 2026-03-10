@@ -29,4 +29,4 @@ args = ["-y", "chrome-devtools-mcp@latest"]
 
 [mcp_servers.serena]
 command = "uvx"
-args = ["--from", "git+https://github.com/oraios/serena", "serena", "start-mcp-server", "--context", "codex", "--project-from-cwd", "--enable-web-dashboard", "--open-web-dashboard"]
+args = ["--from", "git+https://github.com/oraios/serena", "serena", "start-mcp-server", "--context", "codex"]
