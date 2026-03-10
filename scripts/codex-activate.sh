@@ -136,6 +136,22 @@ raise SystemExit(1)
 done
 
 MCP_LIST_AFTER_JSON="$(codex mcp list --json || true)"
+config_context7_auth_present="$(python3 - "$CONFIG_FILE" <<'PY'
+import sys
+import tomllib
+from pathlib import Path
+
+path = Path(sys.argv[1])
+if not path.exists():
+    print("0")
+    raise SystemExit(0)
+
+data = tomllib.loads(path.read_text(encoding="utf-8"))
+headers = data.get("mcp_servers", {}).get("context7", {}).get("http_headers", {})
+value = headers.get("CONTEXT7_API_KEY") or headers.get("Authorization") or ""
+print("1" if value and "__CONTEXT7_API_KEY__" not in value else "0")
+PY
+)"
 context7_auth="$(printf '%s' "$MCP_LIST_AFTER_JSON" | python3 -c '
 import json
 import sys
@@ -147,12 +163,28 @@ for entry in json.load(sys.stdin):
 raise SystemExit(1)
 ')"
 if [[ "$context7_auth" == "not_logged_in" ]]; then
-  if [[ -f "$CONFIG_FILE" ]] && grep -Eq '^CONTEXT7_API_KEY = "[^"]+"' "$CONFIG_FILE" && ! grep -q '__CONTEXT7_API_KEY__' "$CONFIG_FILE"; then
+  if [[ "$config_context7_auth_present" == "1" ]]; then
     say "context7 reports not logged in, but token header is configured in config.toml (can be expected with token-based auth)."
   else
     warn "context7 MCP is enabled but not logged in (check CONTEXT7_API_KEY)"
   fi
 fi
+config_github_auth_present="$(python3 - "$CONFIG_FILE" <<'PY'
+import sys
+import tomllib
+from pathlib import Path
+
+path = Path(sys.argv[1])
+if not path.exists():
+    print("0")
+    raise SystemExit(0)
+
+data = tomllib.loads(path.read_text(encoding="utf-8"))
+headers = data.get("mcp_servers", {}).get("github", {}).get("http_headers", {})
+value = headers.get("Authorization") or ""
+print("1" if value and "__GITHUB_MCP_TOKEN__" not in value else "0")
+PY
+)"
 github_auth="$(printf '%s' "$MCP_LIST_AFTER_JSON" | python3 -c '
 import json
 import sys
@@ -164,7 +196,7 @@ for entry in json.load(sys.stdin):
 raise SystemExit(1)
 ')"
 if [[ "$github_auth" == "not_logged_in" ]]; then
-  if [[ -f "$CONFIG_FILE" ]] && grep -Eq '^Authorization = "Bearer [^"]+"' "$CONFIG_FILE" && ! grep -q '__GITHUB_MCP_TOKEN__' "$CONFIG_FILE"; then
+  if [[ "$config_github_auth_present" == "1" ]]; then
     say "github reports not logged in, but bearer header is configured in config.toml (can be expected with token-based auth)."
   else
     warn "github MCP is enabled but not logged in (check token/header in Codex config)"

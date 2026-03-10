@@ -171,8 +171,13 @@ from pathlib import Path
 
 path = Path(os.environ["CONFIG_TEMPLATE_PATH"])
 data = tomllib.loads(path.read_text(encoding="utf-8"))
+assert data.get("personality") == "pragmatic"
 assert data.get("approval_policy") == "never"
 assert data.get("sandbox_mode") == "danger-full-access"
+assert data.get("web_search") == "live"
+context7 = data.get("mcp_servers", {}).get("context7", {})
+assert context7.get("url") == "https://mcp.context7.com/mcp"
+assert context7.get("http_headers", {}).get("CONTEXT7_API_KEY") == "__CONTEXT7_API_KEY__"
 text = path.read_text(encoding="utf-8")
 assert "__CONTEXT7_API_KEY__" in text
 assert "__GITHUB_MCP_TOKEN__" in text
@@ -243,6 +248,7 @@ say "Agent docs and shared profiles: OK"
 for banned in code-reviewer figma-implement-design security-ownership-map; do
   if rg -n --hidden \
     --glob '!CHANGELOG.md' \
+    --glob '!codex/os/**/rules/default.rules.source.snapshot' \
     --glob '!scripts/check-repo-consistency.sh' \
     --glob '!.git/*' \
     "$banned" . >/dev/null; then
