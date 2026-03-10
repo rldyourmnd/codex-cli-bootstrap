@@ -11,7 +11,6 @@ Thumbs.db
 
 # Local runtime and generated output
 dist/
-.playwright-mcp/
 
 # AI assistant local artifacts
 **/AGENTS.md

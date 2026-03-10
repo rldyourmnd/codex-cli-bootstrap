@@ -29,7 +29,7 @@ REQUIRED_MCPS=(
   "sequential-thinking"
   "shadcn"
   "serena"
-  "playwright"
+  "chrome-devtools"
 )
 
 REQUIRED_SKILLS=(

@@ -27,7 +27,7 @@ It packages a reproducible Codex baseline, shared Codex agent profiles, sanitize
 
 ## Runtime Baseline
 
-- MCP baseline: `context7`, `sequential-thinking`, `github`, `shadcn`, `playwright`, `serena`
+- MCP baseline: `context7`, `sequential-thinking`, `github`, `shadcn`, `chrome-devtools`, `serena`
 - Shared agent profiles: `9` under `codex/os/common/agents/codex-agents`
 - Custom skills: `23` under `codex/os/linux/runtime/skills/custom`
 - Config defaults: `approval_policy = "never"` and `sandbox_mode = "danger-full-access"`

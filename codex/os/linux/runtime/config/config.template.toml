@@ -22,11 +22,11 @@ startup_timeout_sec = 60
 command = "npx"
 args = ["-y", "shadcn@latest", "mcp"]
 
-[mcp_servers.playwright]
+[mcp_servers.chrome-devtools]
 startup_timeout_sec = 60
 command = "npx"
-args = ["-y", "@playwright/mcp@latest", "--output-dir", ".playwright-mcp"]
+args = ["-y", "chrome-devtools-mcp@latest"]
 
 [mcp_servers.serena]
 command = "uvx"
-args = ["--from", "git+https://github.com/oraios/serena", "serena", "start-mcp-server", "--context", "codex", "--project-from-cwd", "--enable-web-dashboard", "false", "--open-web-dashboard", "false"]
+args = ["--from", "git+https://github.com/oraios/serena", "serena", "start-mcp-server", "--context", "codex", "--project-from-cwd", "--enable-web-dashboard", "--open-web-dashboard"]

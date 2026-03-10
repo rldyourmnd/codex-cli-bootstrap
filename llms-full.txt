@@ -8,7 +8,7 @@ It provides deterministic install, verification, and export workflows, with stri
 ## Current baseline
 
 - Current primary exported payload: Linux
-- MCP baseline: 6 (`context7`, `sequential-thinking`, `github`, `shadcn`, `playwright`, `serena`)
+- MCP baseline: 6 (`context7`, `sequential-thinking`, `github`, `shadcn`, `chrome-devtools`, `serena`)
 - Non-system skills: 32 total
 - Custom skills: 23 (`codex/os/linux/runtime/skills/custom/*`)
 - Shared profiles: 9 (`codex/os/common/agents/codex-agents/*`)

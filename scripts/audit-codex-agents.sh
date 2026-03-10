@@ -127,7 +127,7 @@ for profile in "${skill_profiles[@]}"; do
         serena) token="Serena" ;;
         sequential-thinking) token="Sequential Thinking" ;;
         github) token="GitHub MCP" ;;
-        playwright) token="Playwright MCP" ;;
+        chrome-devtools) token="Chrome DevTools MCP" ;;
         *) token="" ;;
       esac
       if [[ -n "$token" ]] && ! grep -qi "$token" "$doc_md"; then
