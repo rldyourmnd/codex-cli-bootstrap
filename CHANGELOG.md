@@ -4,6 +4,21 @@ All notable changes to `codex-cli-bootstrap` are documented in this file.
 
 The format is based on Keep a Changelog principles and uses a simplified date-based style.
 
+## v0.0.3 - 2026-03-11
+
+### Changed
+
+- Linux runtime config now mirrors the current Codex baseline with `personality = "pragmatic"`, `web_search = "live"`, explicit full-access automation settings, and remote Context7 header auth placeholders
+- Shared agent/runtime policy now reflects the Chrome DevTools MCP browser baseline, `gpt-5.4` agent model routing, ripgrep fallback guidance, SSH command inputs, and stricter atomic GitHub commit guidance
+- Export and activation scripts now understand token-header MCP auth for Context7 and GitHub instead of only older inline token patterns
+- Portable setup and runtime docs now state that the current Codex CLI `--full-auto` alias is not treated as equivalent to the repository's exact full-access restore baseline
+- Runtime metadata exports were refreshed for the current source-machine state, including empty project-trust snapshots and updated rule/toolchain captures
+
+### Fixed
+
+- `scripts/export-from-local.sh` now sanitizes both legacy and current Context7/GitHub auth shapes before writing portable config templates
+- `scripts/check-repo-consistency.sh` now validates the active config baseline fields and ignores exported source-rule snapshots when checking for removed skills
+
 ## v0.0.1 - 2026-02-26
 
 ### Added
