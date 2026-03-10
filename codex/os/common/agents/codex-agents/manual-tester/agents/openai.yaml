@@ -6,8 +6,8 @@ interface:
 dependencies:
   tools:
     - type: "mcp"
-      value: "playwright"
-      description: "Browser automation for realistic flows"
+      value: "chrome-devtools"
+      description: "Browser automation and inspection for realistic flows"
 
 policy:
   allow_implicit_invocation: true
